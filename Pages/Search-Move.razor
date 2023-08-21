@@ -1,0 +1,46 @@
+﻿@using SMPage.Models
+@using SMPage.Services
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime  // JSRuntime을 주입합니다.
+
+
+@page "/search-move"
+
+<h3>기술 검색</h3>
+
+<div>
+    <h5>Select Game Versions:</h5>
+    <div>
+        @foreach (var version in GameVersions)
+        {
+            <input type="checkbox" id="@version.Id" value="@version.Id" @bind="version.IsSelected" />
+            <label for="@version.Id">@version.Identifier</label><br />
+        }
+    </div>
+</div>
+
+<div class="mt-4">
+    <h5>Search for a move:</h5>
+    <input type="text" placeholder="Enter move name..." />
+    <button @onclick="SearchMove">Search</button>
+</div>
+
+@code {
+    private List<GameVersion> GameVersions = new List<GameVersion>();
+    private int CurrentLanguageId { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // localStorage에서 선택한 언어 ID를 불러옵니다.
+        CurrentLanguageId = await JSRuntime.InvokeAsync<int>("localStorage.getItem", "selectedLanguageId");
+
+        // 해당 언어 ID에 따라 게임 버전 이름을 불러옵니다.
+        await LoadGameVersions();
+    }
+
+    private async Task LoadGameVersions()
+    {
+        // CSV 또는 다른 데이터 소스에서 CurrentLanguageId를 사용하여 게임 버전 이름을 불러옵니다.
+        // 여기서 `version-names.csv` 데이터를 불러와서 해당 언어 ID에 맞는 이름을 GameVersions 리스트에 추가합니다.
+    }
+}

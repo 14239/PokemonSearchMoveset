@@ -1,0 +1,197 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(RunConfiguration)' == 'https' ">
+    <ExternalConsole>true</ExternalConsole>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(RunConfiguration)' == 'http' ">
+    <ExternalConsole>true</ExternalConsole>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="wwwroot\database\abilities.csv" />
+    <None Include="wwwroot\database\ability_changelog.csv" />
+    <None Include="wwwroot\database\ability_changelog_prose.csv" />
+    <None Include="wwwroot\database\ability_flavor_text.csv" />
+    <None Include="wwwroot\database\ability_names.csv" />
+    <None Include="wwwroot\database\ability_prose.csv" />
+    <None Include="wwwroot\database\berries.csv" />
+    <None Include="wwwroot\database\berry_firmness.csv" />
+    <None Include="wwwroot\database\berry_firmness_names.csv" />
+    <None Include="wwwroot\database\berry_flavors.csv" />
+    <None Include="wwwroot\database\characteristics.csv" />
+    <None Include="wwwroot\database\characteristic_text.csv" />
+    <None Include="wwwroot\database\conquest_episodes.csv" />
+    <None Include="wwwroot\database\conquest_episode_names.csv" />
+    <None Include="wwwroot\database\conquest_episode_warriors.csv" />
+    <None Include="wwwroot\database\conquest_kingdoms.csv" />
+    <None Include="wwwroot\database\conquest_kingdom_names.csv" />
+    <None Include="wwwroot\database\conquest_max_links.csv" />
+    <None Include="wwwroot\database\conquest_move_data.csv" />
+    <None Include="wwwroot\database\conquest_move_displacements.csv" />
+    <None Include="wwwroot\database\conquest_move_displacement_prose.csv" />
+    <None Include="wwwroot\database\conquest_move_effects.csv" />
+    <None Include="wwwroot\database\conquest_move_effect_prose.csv" />
+    <None Include="wwwroot\database\conquest_move_ranges.csv" />
+    <None Include="wwwroot\database\conquest_move_range_prose.csv" />
+    <None Include="wwwroot\database\conquest_pokemon_abilities.csv" />
+    <None Include="wwwroot\database\conquest_pokemon_evolution.csv" />
+    <None Include="wwwroot\database\conquest_pokemon_moves.csv" />
+    <None Include="wwwroot\database\conquest_pokemon_stats.csv" />
+    <None Include="wwwroot\database\conquest_stats.csv" />
+    <None Include="wwwroot\database\conquest_stat_names.csv" />
+    <None Include="wwwroot\database\conquest_transformation_pokemon.csv" />
+    <None Include="wwwroot\database\conquest_transformation_warriors.csv" />
+    <None Include="wwwroot\database\conquest_warriors.csv" />
+    <None Include="wwwroot\database\conquest_warrior_archetypes.csv" />
+    <None Include="wwwroot\database\conquest_warrior_names.csv" />
+    <None Include="wwwroot\database\conquest_warrior_ranks.csv" />
+    <None Include="wwwroot\database\conquest_warrior_rank_stat_map.csv" />
+    <None Include="wwwroot\database\conquest_warrior_skills.csv" />
+    <None Include="wwwroot\database\conquest_warrior_skill_names.csv" />
+    <None Include="wwwroot\database\conquest_warrior_specialties.csv" />
+    <None Include="wwwroot\database\conquest_warrior_stats.csv" />
+    <None Include="wwwroot\database\conquest_warrior_stat_names.csv" />
+    <None Include="wwwroot\database\conquest_warrior_transformation.csv" />
+    <None Include="wwwroot\database\contest_combos.csv" />
+    <None Include="wwwroot\database\contest_effects.csv" />
+    <None Include="wwwroot\database\contest_effect_prose.csv" />
+    <None Include="wwwroot\database\contest_types.csv" />
+    <None Include="wwwroot\database\contest_type_names.csv" />
+    <None Include="wwwroot\database\egg_groups.csv" />
+    <None Include="wwwroot\database\egg_group_prose.csv" />
+    <None Include="wwwroot\database\encounters.csv" />
+    <None Include="wwwroot\database\encounter_conditions.csv" />
+    <None Include="wwwroot\database\encounter_condition_prose.csv" />
+    <None Include="wwwroot\database\encounter_condition_values.csv" />
+    <None Include="wwwroot\database\encounter_condition_value_map.csv" />
+    <None Include="wwwroot\database\encounter_condition_value_prose.csv" />
+    <None Include="wwwroot\database\encounter_methods.csv" />
+    <None Include="wwwroot\database\encounter_method_prose.csv" />
+    <None Include="wwwroot\database\encounter_slots.csv" />
+    <None Include="wwwroot\database\evolution_chains.csv" />
+    <None Include="wwwroot\database\evolution_triggers.csv" />
+    <None Include="wwwroot\database\evolution_trigger_prose.csv" />
+    <None Include="wwwroot\database\experience.csv" />
+    <None Include="wwwroot\database\genders.csv" />
+    <None Include="wwwroot\database\generations.csv" />
+    <None Include="wwwroot\database\generation_names.csv" />
+    <None Include="wwwroot\database\growth_rates.csv" />
+    <None Include="wwwroot\database\growth_rate_prose.csv" />
+    <None Include="wwwroot\database\items.csv" />
+    <None Include="wwwroot\database\item_categories.csv" />
+    <None Include="wwwroot\database\item_category_prose.csv" />
+    <None Include="wwwroot\database\item_flags.csv" />
+    <None Include="wwwroot\database\item_flag_map.csv" />
+    <None Include="wwwroot\database\item_flag_prose.csv" />
+    <None Include="wwwroot\database\item_flavor_summaries.csv" />
+    <None Include="wwwroot\database\item_flavor_text.csv" />
+    <None Include="wwwroot\database\item_fling_effects.csv" />
+    <None Include="wwwroot\database\item_fling_effect_prose.csv" />
+    <None Include="wwwroot\database\item_game_indices.csv" />
+    <None Include="wwwroot\database\item_names.csv" />
+    <None Include="wwwroot\database\item_pockets.csv" />
+    <None Include="wwwroot\database\item_pocket_names.csv" />
+    <None Include="wwwroot\database\item_prose.csv" />
+    <None Include="wwwroot\database\languages.csv" />
+    <None Include="wwwroot\database\language_names.csv" />
+    <None Include="wwwroot\database\locations.csv" />
+    <None Include="wwwroot\database\location_areas.csv" />
+    <None Include="wwwroot\database\location_area_encounter_rates.csv" />
+    <None Include="wwwroot\database\location_area_prose.csv" />
+    <None Include="wwwroot\database\location_game_indices.csv" />
+    <None Include="wwwroot\database\location_names.csv" />
+    <None Include="wwwroot\database\machines.csv" />
+    <None Include="wwwroot\database\moves.csv" />
+    <None Include="wwwroot\database\move_battle_styles.csv" />
+    <None Include="wwwroot\database\move_battle_style_prose.csv" />
+    <None Include="wwwroot\database\move_changelog.csv" />
+    <None Include="wwwroot\database\move_damage_classes.csv" />
+    <None Include="wwwroot\database\move_damage_class_prose.csv" />
+    <None Include="wwwroot\database\move_effects.csv" />
+    <None Include="wwwroot\database\move_effect_changelog.csv" />
+    <None Include="wwwroot\database\move_effect_changelog_prose.csv" />
+    <None Include="wwwroot\database\move_effect_prose.csv" />
+    <None Include="wwwroot\database\move_flags.csv" />
+    <None Include="wwwroot\database\move_flag_map.csv" />
+    <None Include="wwwroot\database\move_flag_prose.csv" />
+    <None Include="wwwroot\database\move_flavor_summaries.csv" />
+    <None Include="wwwroot\database\move_flavor_text.csv" />
+    <None Include="wwwroot\database\move_meta.csv" />
+    <None Include="wwwroot\database\move_meta_ailments.csv" />
+    <None Include="wwwroot\database\move_meta_ailment_names.csv" />
+    <None Include="wwwroot\database\move_meta_categories.csv" />
+    <None Include="wwwroot\database\move_meta_category_prose.csv" />
+    <None Include="wwwroot\database\move_meta_stat_changes.csv" />
+    <None Include="wwwroot\database\move_names.csv" />
+    <None Include="wwwroot\database\move_targets.csv" />
+    <None Include="wwwroot\database\move_target_prose.csv" />
+    <None Include="wwwroot\database\natures.csv" />
+    <None Include="wwwroot\database\nature_battle_style_preferences.csv" />
+    <None Include="wwwroot\database\nature_names.csv" />
+    <None Include="wwwroot\database\nature_pokeathlon_stats.csv" />
+    <None Include="wwwroot\database\pal_park.csv" />
+    <None Include="wwwroot\database\pal_park_areas.csv" />
+    <None Include="wwwroot\database\pal_park_area_names.csv" />
+    <None Include="wwwroot\database\pokeathlon_stats.csv" />
+    <None Include="wwwroot\database\pokeathlon_stat_names.csv" />
+    <None Include="wwwroot\database\pokedexes.csv" />
+    <None Include="wwwroot\database\pokedex_prose.csv" />
+    <None Include="wwwroot\database\pokedex_version_groups.csv" />
+    <None Include="wwwroot\database\pokemon.csv" />
+    <None Include="wwwroot\database\pokemon_abilities.csv" />
+    <None Include="wwwroot\database\pokemon_colors.csv" />
+    <None Include="wwwroot\database\pokemon_color_names.csv" />
+    <None Include="wwwroot\database\pokemon_dex_numbers.csv" />
+    <None Include="wwwroot\database\pokemon_egg_groups.csv" />
+    <None Include="wwwroot\database\pokemon_evolution.csv" />
+    <None Include="wwwroot\database\pokemon_forms.csv" />
+    <None Include="wwwroot\database\pokemon_form_generations.csv" />
+    <None Include="wwwroot\database\pokemon_form_names.csv" />
+    <None Include="wwwroot\database\pokemon_form_pokeathlon_stats.csv" />
+    <None Include="wwwroot\database\pokemon_form_types.csv" />
+    <None Include="wwwroot\database\pokemon_game_indices.csv" />
+    <None Include="wwwroot\database\pokemon_habitats.csv" />
+    <None Include="wwwroot\database\pokemon_habitat_names.csv" />
+    <None Include="wwwroot\database\pokemon_items.csv" />
+    <None Include="wwwroot\database\pokemon_moves.csv" />
+    <None Include="wwwroot\database\pokemon_move_methods.csv" />
+    <None Include="wwwroot\database\pokemon_move_method_prose.csv" />
+    <None Include="wwwroot\database\pokemon_shapes.csv" />
+    <None Include="wwwroot\database\pokemon_shape_prose.csv" />
+    <None Include="wwwroot\database\pokemon_species.csv" />
+    <None Include="wwwroot\database\pokemon_species_flavor_summaries.csv" />
+    <None Include="wwwroot\database\pokemon_species_flavor_text.csv" />
+    <None Include="wwwroot\database\pokemon_species_names.csv" />
+    <None Include="wwwroot\database\pokemon_species_prose.csv" />
+    <None Include="wwwroot\database\pokemon_stats.csv" />
+    <None Include="wwwroot\database\pokemon_types.csv" />
+    <None Include="wwwroot\database\pokemon_types_past.csv" />
+    <None Include="wwwroot\database\regions.csv" />
+    <None Include="wwwroot\database\region_names.csv" />
+    <None Include="wwwroot\database\stats.csv" />
+    <None Include="wwwroot\database\stat_names.csv" />
+    <None Include="wwwroot\database\super_contest_combos.csv" />
+    <None Include="wwwroot\database\super_contest_effects.csv" />
+    <None Include="wwwroot\database\super_contest_effect_prose.csv" />
+    <None Include="wwwroot\database\types.csv" />
+    <None Include="wwwroot\database\type_efficacy.csv" />
+    <None Include="wwwroot\database\type_efficacy_past.csv" />
+    <None Include="wwwroot\database\type_game_indices.csv" />
+    <None Include="wwwroot\database\type_names.csv" />
+    <None Include="wwwroot\database\versions.csv" />
+    <None Include="wwwroot\database\version_groups.csv" />
+    <None Include="wwwroot\database\version_group_pokemon_move_methods.csv" />
+    <None Include="wwwroot\database\version_group_regions.csv" />
+    <None Include="wwwroot\database\version_names.csv" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="7.0.10" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="7.0.10" PrivateAssets="all" />
+  </ItemGroup>
+
+</Project>

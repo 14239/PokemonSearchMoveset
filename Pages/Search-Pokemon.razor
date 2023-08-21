@@ -1,0 +1,43 @@
+﻿@using SMPage.Models
+@using SMPage.Services
+@inject HttpClient Http
+
+@page "/search-pokemon"
+
+<h3>포켓몬 번호 입력:</h3>
+<input @bind="inputId" type="number" placeholder="포켓몬 번호를 입력하세요" />
+<button @onclick="ShowPokemonName">검색</button>
+
+@if (!string.IsNullOrEmpty(pokemonName))
+{
+    <h4>포켓몬 이름: @pokemonName</h4>
+}
+
+
+@code {
+    private string inputId;
+    private string pokemonName;
+
+    private void ShowPokemonName()
+    {
+
+        int id = int.Parse(inputId); // 사용자가 입력한 문자열을 숫자로 변환
+        var pokemon = pokemonNames.FirstOrDefault(p => p.SpeciesId == id && p.LocalLanguageId == 3);
+        if (pokemon != null)
+        {
+            pokemonName = pokemon.Name;
+        }
+        else
+        {
+            pokemonName = "해당 번호의 포켓몬이 없습니다.";
+        }
+    }
+
+    // 초기 데이터 로딩용. 실제로는 이곳에서 CSV 파일에서 데이터를 로드할 수 있습니다.
+    private List<PokemonSpeciesName> pokemonNames;
+
+    protected override async Task OnInitializedAsync()
+    {
+        pokemonNames = await CsvLoader.LoadPokemonNames(http: Http, path: "database/pokemon_species_names.csv");
+    }
+    }

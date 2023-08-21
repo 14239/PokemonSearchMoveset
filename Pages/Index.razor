@@ -1,0 +1,60 @@
+﻿@using SMPage.Models
+@using SMPage.Services
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime;
+
+@page "/"
+
+
+<h1>Welcome!</h1>
+
+
+<div class="language-selector">
+    <label for="languageDropdown">언어 선택: </label>
+    <select id="languageDropdown" @bind="SelectedLanguageId">
+        @foreach(var language in Languages)
+        {
+        <option value="@language.Id">@language.Identifier</option>
+        }
+    </select>
+</div>
+
+@code {
+    private int SelectedLanguageId { get; set; } = 3;  // 기본값으로 한국어 선택
+
+    private class Language
+    {
+        public int Id { get; set; }
+        public string Iso639 { get; set; }
+        public string Iso3166 { get; set; }
+        public string Identifier { get; set; }
+        public bool Official { get; set; }
+        public int Order { get; set; }
+    }
+
+    private List<Language> Languages = new List<Language>
+    {
+        new Language { Id = 1, Iso639 = "ja", Iso3166 = "jp", Identifier = "Japanese (ja-Hrkt)", Official = true, Order = 1 },
+        new Language { Id = 2, Iso639 = "ja", Iso3166 = "jp", Identifier = "Roomaji", Official = true, Order = 3 },
+        new Language { Id = 3, Iso639 = "ko", Iso3166 = "kr", Identifier = "Korean (ko)", Official = true, Order = 4 },
+        new Language { Id = 4, Iso639 = "zh", Iso3166 = "cn", Identifier = "Chinese Traditional (zh-Hant)", Official = true, Order = 5 },
+        new Language { Id = 5, Iso639 = "fr", Iso3166 = "fr", Identifier = "French (fr)", Official = true, Order = 8 },
+        new Language { Id = 6, Iso639 = "de", Iso3166 = "de", Identifier = "German (de)", Official = true, Order = 9 },
+        new Language { Id = 7, Iso639 = "es", Iso3166 = "es", Identifier = "Spanish (es)", Official = true, Order = 10 },
+        new Language { Id = 8, Iso639 = "it", Iso3166 = "it", Identifier = "Italian (it)", Official = true, Order = 11 },
+        new Language { Id = 9, Iso639 = "en", Iso3166 = "us", Identifier = "English (en)", Official = true, Order = 7 },
+        new Language { Id = 10, Iso639 = "cs", Iso3166 = "cz", Identifier = "Czech (cs)", Official = false, Order = 12 },
+        new Language { Id = 11, Iso639 = "ja", Iso3166 = "jp", Identifier = "Japanese (ja)", Official = true, Order = 2 },
+        new Language { Id = 12, Iso639 = "zh", Iso3166 = "cn", Identifier = "Chinese Simplified (zh-Hans)", Official = true, Order = 6 },
+        new Language { Id = 13, Iso639 = "pt-BR", Iso3166 = "br", Identifier = "Portuguese (pt-BR)", Official = false, Order = 13 }
+    };
+
+    private void OnLanguageChanged(ChangeEventArgs e)
+    {
+        SelectedLanguageId = int.Parse(e.Value.ToString());
+
+        // 선택한 언어 ID를 localStorage에 저장합니다.
+        JSRuntime.InvokeVoidAsync("localStorage.setItem", "selectedLanguageId", SelectedLanguageId);
+    }
+
+}
