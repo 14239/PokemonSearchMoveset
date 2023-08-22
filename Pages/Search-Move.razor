@@ -1,6 +1,8 @@
 ﻿@using SMPage.Models
 @using SMPage.Services
+@using Microsoft.JSInterop
 @inject HttpClient Http
+@inject IJSRuntime JSRuntime
 
 @page "/search-move"
 
@@ -29,11 +31,20 @@
     private List<VersionCSV> Versions;
     private List<VersionNameCSV> VersionNames;
 
-    private int CurrentLanguageId = 3;  // 한글 설정
+
+    private int CurrentLanguageId;
 
     protected override async Task OnInitializedAsync()
     {
+        // 선택한 언어의 ID를 로컬 스토리지에서 가져오기
+        CurrentLanguageId = await GetSelectedLanguageId();
         await LoadData();
+    }
+
+    private async Task<int> GetSelectedLanguageId()
+    {
+        var storedLanguageId = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "selectedLanguageId");
+        return int.TryParse(storedLanguageId, out var languageId) ? languageId : 3; // 기본값은 3 (한국어)
     }
 
     private async Task LoadData()

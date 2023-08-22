@@ -27,6 +27,14 @@
         <a class="dismiss">🗙</a>
     </div>
     <script src="_framework/blazor.webassembly.js"></script>
+
+    <script>function setLanguageIdToLocalStorage(key, value) {
+            localStorage.setItem(key, value);
+        }
+
+        function getLanguageIdFromLocalStorage(key) {
+            return localStorage.getItem(key);
+        }</script>
 </body>
 
 </html>

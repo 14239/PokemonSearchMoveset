@@ -60,4 +60,35 @@
         public int Order { get; set; }
     }
 
+
+    // 기술세팅
+
+    public class MoveCSV
+    {
+        public int Id { get; set; }
+        public string Identifier { get; set; }
+        public int GenerationId { get; set; }
+        public int TypeId { get; set; }
+        public int? Power { get; set; } // nullable because some moves might not have power
+        public int? Pp { get; set; }
+        public int? Accuracy { get; set; }
+        public int Priority { get; set; }
+        public int TargetId { get; set; }
+        public int DamageClassId { get; set; }
+        public int EffectId { get; set; }
+        public int? EffectChance { get; set; } // nullable because some moves might not have effect chance
+        public int ContestTypeId { get; set; }
+        public int ContestEffectId { get; set; }
+        public int SuperContestEffectId { get; set; }
+    }
+
+    public class MoveNameCSV
+    {
+        public int MoveId { get; set; }
+        public int LocalLanguageId { get; set; }
+        public string Name { get; set; }
+    }
+
+
+
 }

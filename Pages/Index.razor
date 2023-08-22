@@ -1,25 +1,46 @@
 ﻿@using SMPage.Models
 @using SMPage.Services
 @inject HttpClient Http
+@inject IJSRuntime JSRuntime
 
 @page "/"
 
-
 <h1>Welcome!</h1>
-
 
 <div class="language-selector">
     <label for="languageDropdown">언어 선택: </label>
-    <select id="languageDropdown" @bind="SelectedLanguageId">
-        @foreach(var language in Languages)
+    <select id="languageDropdown" @bind="SelectedLanguageId" @bind:event="onchange">
+        @foreach (var language in Languages)
         {
-        <option value="@language.Id">@language.Identifier</option>
+            <option value="@language.Id">@language.Identifier</option>
         }
     </select>
 </div>
 
 @code {
-    private int SelectedLanguageId { get; set; } = 3;  // 기본값으로 한국어 선택
+    private int SelectedLanguageId
+    {
+        get => _selectedLanguageId;
+        set
+        {
+            if (_selectedLanguageId != value)
+            {
+                _selectedLanguageId = value;
+                OnLanguageChanged();
+            }
+        }
+    }
+    private int _selectedLanguageId = 3;
+
+    private async void OnLanguageChanged()
+    {
+        var selectedLanguage = Languages.FirstOrDefault(l => l.Id == SelectedLanguageId);
+        if (selectedLanguage != null)
+        {
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "selectedLanguageId", SelectedLanguageId.ToString());
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "selectedLanguageName", selectedLanguage.Identifier);
+        }
+    }
 
     private class Language
     {
@@ -32,7 +53,7 @@
     }
 
     private List<Language> Languages = new List<Language>
-    {
+{
         new Language { Id = 1, Iso639 = "ja", Iso3166 = "jp", Identifier = "Japanese (ja-Hrkt)", Official = true, Order = 1 },
         new Language { Id = 2, Iso639 = "ja", Iso3166 = "jp", Identifier = "Roomaji", Official = true, Order = 3 },
         new Language { Id = 3, Iso639 = "ko", Iso3166 = "kr", Identifier = "Korean (ko)", Official = true, Order = 4 },
@@ -48,12 +69,19 @@
         new Language { Id = 13, Iso639 = "pt-BR", Iso3166 = "br", Identifier = "Portuguese (pt-BR)", Official = false, Order = 13 }
     };
 
-    private void OnLanguageChanged(ChangeEventArgs e)
-    {
-        SelectedLanguageId = int.Parse(e.Value.ToString());
 
-        // 선택한 언어 ID를 localStorage에 저장합니다.
-        //JSRuntime.InvokeVoidAsync("localStorage.setItem", "selectedLanguageId", SelectedLanguageId);
+
+    // 페이지가 로드될 때 로컬 스토리지에서 언어 선택값을 읽어오는 메서드도 필요할 수 있습니다.
+    protected override async Task OnInitializedAsync()
+    {
+        var storedLanguageId = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "selectedLanguageId");
+        if (!string.IsNullOrEmpty(storedLanguageId))
+        {
+            if (int.TryParse(storedLanguageId, out int parsedId))
+            {
+                SelectedLanguageId = parsedId;
+            }
+        }
     }
 
 }
