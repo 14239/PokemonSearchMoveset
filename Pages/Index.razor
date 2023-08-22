@@ -1,7 +1,6 @@
 ﻿@using SMPage.Models
 @using SMPage.Services
 @inject HttpClient Http
-@inject IJSRuntime JSRuntime;
 
 @page "/"
 
@@ -54,7 +53,7 @@
         SelectedLanguageId = int.Parse(e.Value.ToString());
 
         // 선택한 언어 ID를 localStorage에 저장합니다.
-        JSRuntime.InvokeVoidAsync("localStorage.setItem", "selectedLanguageId", SelectedLanguageId);
+        //JSRuntime.InvokeVoidAsync("localStorage.setItem", "selectedLanguageId", SelectedLanguageId);
     }
 
 }

@@ -1,8 +1,6 @@
 ﻿@using SMPage.Models
 @using SMPage.Services
 @inject HttpClient Http
-@inject IJSRuntime JSRuntime  // JSRuntime을 주입합니다.
-
 
 @page "/search-move"
 
@@ -11,10 +9,11 @@
 <div>
     <h5>Select Game Versions:</h5>
     <div>
-        @foreach (var version in GameVersions)
+        @foreach (var versionGroup in VersionGroups)
         {
-            <input type="checkbox" id="@version.Id" value="@version.Id" @bind="version.IsSelected" />
-            <label for="@version.Id">@version.Identifier</label><br />
+            string displayName = GetDisplayNameForVersionGroup(versionGroup.Id);
+            <input type="checkbox" id="@versionGroup.Id" value="@versionGroup.Id" />
+            <label for="@versionGroup.Id">@displayName</label><br />
         }
     </div>
 </div>
@@ -22,25 +21,41 @@
 <div class="mt-4">
     <h5>Search for a move:</h5>
     <input type="text" placeholder="Enter move name..." />
-    <button @onclick="SearchMove">Search</button>
+    <button>Search</button>
 </div>
 
 @code {
-    private List<GameVersion> GameVersions = new List<GameVersion>();
-    private int CurrentLanguageId { get; set; }
+    private List<VersionGroupCSV> VersionGroups = new List<VersionGroupCSV>();
+    private List<VersionCSV> Versions;
+    private List<VersionNameCSV> VersionNames;
+
+    private int CurrentLanguageId = 3;  // 한글 설정
 
     protected override async Task OnInitializedAsync()
     {
-        // localStorage에서 선택한 언어 ID를 불러옵니다.
-        CurrentLanguageId = await JSRuntime.InvokeAsync<int>("localStorage.getItem", "selectedLanguageId");
-
-        // 해당 언어 ID에 따라 게임 버전 이름을 불러옵니다.
-        await LoadGameVersions();
+        await LoadData();
     }
 
-    private async Task LoadGameVersions()
+    private async Task LoadData()
     {
-        // CSV 또는 다른 데이터 소스에서 CurrentLanguageId를 사용하여 게임 버전 이름을 불러옵니다.
-        // 여기서 `version-names.csv` 데이터를 불러와서 해당 언어 ID에 맞는 이름을 GameVersions 리스트에 추가합니다.
+        Versions = await CsvLoader.LoadVersions(Http, "database/versions.csv");
+        VersionNames = await CsvLoader.LoadVersionNames(Http, "database/version_names.csv");
+        VersionGroups = await CsvLoader.LoadVersionGroups(Http, "database/version_groups.csv");
+    }
+
+    private string GetDisplayNameForVersionGroup(int versionGroupId)
+    {
+        var versionIdsInGroup = Versions.Where(v => v.VersionGroupId == versionGroupId).Select(v => v.Id);
+        var displayNames = versionIdsInGroup.Select(id => VersionNames.FirstOrDefault(vn => vn.VersionId == id && vn.LocalLanguageId == CurrentLanguageId)?.Name);
+
+        var finalDisplayName = string.Join("-", displayNames.Where(name => !string.IsNullOrEmpty(name)));
+
+        // 만약 빈 문자열이면 VersionGroupCSV의 Identifier로 대체합니다.
+        if (string.IsNullOrEmpty(finalDisplayName))
+        {
+            finalDisplayName = VersionGroups.FirstOrDefault(vg => vg.Id == versionGroupId)?.Identifier;
+        }
+
+        return finalDisplayName;
     }
 }

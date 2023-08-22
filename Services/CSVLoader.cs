@@ -29,6 +29,23 @@ namespace SMPage.Services
                          .ToList();
         }
 
+        public static async Task<List<VersionGroupCSV>> LoadVersionGroups(HttpClient http, string path)
+        {
+            var csvData = await http.GetStringAsync(path);
+            return csvData.Split('\n')
+                         .Skip(1)
+                         .Where(line => !string.IsNullOrEmpty(line))
+                         .Select(line => line.Split(','))
+                         .Select(tokens => new VersionGroupCSV
+                         {
+                             Id = int.Parse(tokens[0]),
+                             Identifier = tokens[1],
+                             GenerationId = int.Parse(tokens[2]),
+                             Order = int.Parse(tokens[3]),
+                         })
+                         .ToList();
+        }
+
         public static async Task<List<VersionNameCSV>> LoadVersionNames(HttpClient http, string path)
         {
             var csvData = await http.GetStringAsync(path);
