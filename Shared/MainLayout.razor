@@ -24,8 +24,11 @@
         </div>
 
         <article class="content px-4">
-            @Body
+            <CascadingValue Value="@SelectedLanguageId" Name="SelectedLanguageId">
+                @Body
+            </CascadingValue>
         </article>
+
 
     </main>
 </div>
@@ -45,6 +48,7 @@
     }
     private int _selectedLanguageId = 3;
 
+    /*
     private void OnLanguageChanged()
     {
         var selectedLanguage = Languages.FirstOrDefault(l => l.Id == SelectedLanguageId);
@@ -52,6 +56,23 @@
         {
             JSRuntime.InvokeVoidAsync("localStorage.setItem", "selectedLanguageId", SelectedLanguageId.ToString());
             JSRuntime.InvokeVoidAsync("localStorage.setItem", "selectedLanguageName", selectedLanguage.Identifier);
+        }
+    }
+    */
+
+    [CascadingParameter]
+    public EventCallback<int> OnLanguageChangedEventCallback { get; set; }
+
+    private void OnLanguageChanged()
+    {
+        var selectedLanguage = Languages.FirstOrDefault(l => l.Id == SelectedLanguageId);
+        if (selectedLanguage != null)
+        {
+            JSRuntime.InvokeVoidAsync("localStorage.setItem", "selectedLanguageId", SelectedLanguageId.ToString());
+            JSRuntime.InvokeVoidAsync("localStorage.setItem", "selectedLanguageName", selectedLanguage.Identifier);
+
+            // CascadingParameter로 하위 컴포넌트에게 언어 변경 알림
+            OnLanguageChangedEventCallback.InvokeAsync(SelectedLanguageId);
         }
     }
 
@@ -97,5 +118,6 @@
                 SelectedLanguageId = parsedId;
             }
         }
-    }
+    }@using Microsoft.AspNetCore.Components
+
 }
