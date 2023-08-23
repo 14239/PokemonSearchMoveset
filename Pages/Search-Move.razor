@@ -22,19 +22,54 @@
 
 <div class="mt-4">
     <h5>Search for a move:</h5>
-    <input type="text" placeholder="Enter move name..." />
-    <button>Search</button>
+    <input @bind="SearchTerm" @bind:event="oninput" type="text" placeholder="Enter move name..." />
+    <div class="search-results">
+        @foreach (var move in matchedMoves)
+        {
+            <div @onclick="() => AddMove(move)">
+                @HighlightMatch(move.Name)
+            </div>
+        }
+    </div>
+    <!-- 추가된 기술 목록 표시 -->
+    @foreach (var addedMove in addedMoves)
+    {
+        <div>
+            @addedMove.Name (ID: @addedMove.MoveId)
+        </div>
+    }
 </div>
 
+
 @code {
+
     private List<VersionGroupCSV> VersionGroups = new List<VersionGroupCSV>();
     private List<VersionCSV> Versions;
     private List<VersionNameCSV> VersionNames;
 
+    protected override async Task OnInitializedAsync()
+    {
+        CurrentLanguageId = await GetSelectedLanguageId();
+        await LoadData();
+        SearchMoves(); // 여기서 호출하여 처음 로딩될 때 모든 기술을 표시
+        UpdateUIForLanguageChange(); // 언어 설정 후 UI 업데이트
+    }
+
+    private async Task LoadData()
+    {
+        Versions = await CsvLoader.LoadVersions(Http, "database/versions.csv");
+        VersionNames = await CsvLoader.LoadVersionNames(Http, "database/version_names.csv");
+        VersionGroups = await CsvLoader.LoadVersionGroups(Http, "database/version_groups.csv");
+        //moves = await CsvLoader.LoadMoves(Http, "database/moves.csv");
+        moveNames = await CsvLoader.LoadMoveNames(Http, "database/move_names.csv");
+    }
+
+    // 언어 정리
+
     private int _previousLanguageId;
 
     [CascadingParameter(Name = "SelectedLanguageId")]
-    public int CurrentLanguageId { get; set; }
+    public int CurrentLanguageId { get; set; } = 3; // 기본값은 3 (한국어)
 
     [CascadingParameter]
     public EventCallback<int> OnLanguageChangedFromMain { get; set; }
@@ -53,25 +88,19 @@
         StateHasChanged(); // 컴포넌트를 다시 렌더링하도록 요청
     }
 
-    protected override async Task OnInitializedAsync()
-    {
-        // 선택한 언어의 ID를 로컬 스토리지에서 가져오기
-        CurrentLanguageId = await GetSelectedLanguageId();
-        await LoadData();
-    }
+
 
     private async Task<int> GetSelectedLanguageId()
     {
         var storedLanguageId = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "selectedLanguageId");
-        return int.TryParse(storedLanguageId, out var languageId) ? languageId : 3; // 기본값은 3 (한국어)
+        if (string.IsNullOrEmpty(storedLanguageId) || !int.TryParse(storedLanguageId, out var languageId))
+        {
+            return 3; // 기본값은 3 (한국어)
+        }
+        return languageId;
     }
 
-    private async Task LoadData()
-    {
-        Versions = await CsvLoader.LoadVersions(Http, "database/versions.csv");
-        VersionNames = await CsvLoader.LoadVersionNames(Http, "database/version_names.csv");
-        VersionGroups = await CsvLoader.LoadVersionGroups(Http, "database/version_groups.csv");
-    }
+    // 버전 체크박스
 
     private string GetDisplayNameForVersionGroup(int versionGroupId)
     {
@@ -88,4 +117,51 @@
 
         return finalDisplayName;
     }
-}
+
+
+    // 기술 검색
+
+    private string _searchTerm = string.Empty;
+    public string SearchTerm
+    {
+        get => _searchTerm;
+        set
+        {
+            _searchTerm = value;
+            SearchMoves();
+        }
+    }
+
+    //private List<MoveCSV> moves;
+    private List<MoveNameCSV> moveNames;
+    private List<MoveNameCSV> matchedMoves = new List<MoveNameCSV>();
+    private List<MoveNameCSV> addedMoves = new List<MoveNameCSV>(); // 추가된 기술 목록
+
+
+    private void SearchMoves()
+    {
+        if (string.IsNullOrEmpty(SearchTerm))
+        {
+            matchedMoves = moveNames.Where(mn => mn.LocalLanguageId == CurrentLanguageId).OrderBy(mn => mn.MoveId).ToList();
+            return;
+        }
+        matchedMoves = moveNames.Where(mn => mn.Name.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) && mn.LocalLanguageId == CurrentLanguageId).ToList();
+    }
+
+    private MarkupString HighlightMatch(string moveName)
+    {
+        if (string.IsNullOrEmpty(SearchTerm))
+        {
+            return new MarkupString(moveName);
+        }
+
+        var highlighted = moveName.Replace(SearchTerm, $"<strong>{SearchTerm}</strong>", StringComparison.OrdinalIgnoreCase);
+        return new MarkupString(highlighted);
+    }
+
+
+    private void AddMove(MoveNameCSV selectedMove)
+    {
+        addedMoves.Add(selectedMove);
+    }
+}   
