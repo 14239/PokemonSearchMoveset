@@ -1,0 +1,52 @@
+﻿@using SMPage.Models
+@using SMPage.Services
+@using Microsoft.JSInterop
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@using SMPage.Components
+
+@page "/search-wild-pokemon"
+
+@code {
+    [CascadingParameter(Name = "SelectedLanguageId")]
+    public int CurrentLanguageId { get; set; }
+
+    private int _previousLanguageId;
+
+    protected override void OnParametersSet()
+    {
+        if (_previousLanguageId != CurrentLanguageId)
+        {
+            UpdateUIForLanguageChange();
+            _previousLanguageId = CurrentLanguageId;
+        }
+    }
+
+    private void UpdateUIForLanguageChange()
+    {
+        StateHasChanged();
+    }
+
+    private int SelectedVersionId { get; set; }
+
+    private void HandleVersionChecked(int checkedVersionId)
+    {
+        // 선택된 버전 정보 처리
+        //SelectedVersionId = checkedVersionId;
+    }
+
+    private void HandleMoveSelected(List<MoveNameCSV> selectedMoves)
+    {
+        // 선택된 기술 정보 처리
+    }
+
+    private void FindWildPokemon()
+    {
+        // 와일드 포켓몬을 검색하는 로직을 여기에 추가합니다.
+    }
+}
+
+<VersionSelect CurrentLanguageId="@CurrentLanguageId" OnVersionSelected="HandleVersionChecked" />
+<MoveSearch CurrentLanguageId="@CurrentLanguageId" OnMoveSelected="HandleMoveSelected" />
+
+<button @onclick="FindWildPokemon">Find Wild Pokemon</button>

@@ -1,0 +1,124 @@
+﻿@using SMPage.Models
+@using SMPage.Services
+@using Microsoft.JSInterop
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+
+@code {
+
+    [Parameter] public EventCallback<List<MoveNameCSV>> OnMoveSelected { get; set; }
+
+    [Parameter] public int CurrentLanguageId { get; set; }
+
+    public List<MoveNameCSV> MoveNames { get; set; }
+
+    private string _searchTerm = string.Empty;
+    public string SearchTerm
+    {
+        get => _searchTerm;
+        set
+        {
+            _searchTerm = value;
+            SearchMoves();
+        }
+    }
+    public List<MoveNameCSV> MatchedMoves { get; set; } = new List<MoveNameCSV>();
+    public List<MoveNameCSV> AddedMoves { get; set; } = new List<MoveNameCSV>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        MoveNames = await CsvLoader.LoadMoveNames(Http, "database/move_names.csv");
+        SearchMoves();
+
+    }
+
+    public void SearchMoves()
+    {
+        if (string.IsNullOrEmpty(SearchTerm))
+        {
+            MatchedMoves = MoveNames.Where(mn => mn.LocalLanguageId == CurrentLanguageId).OrderBy(mn => mn.MoveId).ToList();
+            return;
+        }
+        MatchedMoves = MoveNames.Where(mn => mn.Name.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) && mn.LocalLanguageId == CurrentLanguageId).ToList();
+    }
+
+    public MarkupString HighlightMatch(string moveName)
+    {
+        if (string.IsNullOrEmpty(SearchTerm))
+        {
+            return new MarkupString(moveName);
+        }
+
+        var highlighted = moveName.Replace(SearchTerm, $"<strong>{SearchTerm}</strong>", StringComparison.OrdinalIgnoreCase);
+        return new MarkupString(highlighted);
+    }
+
+    public void AddMove(MoveNameCSV selectedMove)
+    {
+        AddedMoves.Add(selectedMove);
+    }
+
+
+
+    private string previousSearchTerm = string.Empty;
+
+    private int previousLanguageId;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (CurrentLanguageId != previousLanguageId)
+        {
+            previousLanguageId = CurrentLanguageId;
+            await LoadData(); // 언어가 바뀌면 데이터를 다시 로드합니다.
+        }
+
+        if (SearchTerm != previousSearchTerm)
+        {
+            previousSearchTerm = SearchTerm;
+            SearchMoves(); // 검색어가 변경될 때마다 검색 메서드를 호출합니다.
+        }
+    }
+
+
+}
+
+<style>
+    .bordered-box {
+        border: 1px solid #d1d1d1;
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 5px;
+    }
+</style>
+
+<div class="row">
+    <div class="col-md-6">
+        <!-- 검색과 검색 결과 -->
+        <h5>Search for a move:</h5>
+        <input @bind="SearchTerm" @bind:event="oninput" type="text" placeholder="Enter move name..." />
+        <div class="search-results bordered-box" style="max-height: 300px; overflow-y: auto;">
+            @foreach (var move in MatchedMoves)
+            {
+                <div @onclick="() => AddMove(move)">
+                    @HighlightMatch(move.Name)
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <!-- 선택된 기술 목록 -->
+        <h5>Selected Moves:</h5>
+        @foreach (var addedMove in AddedMoves)
+        {
+            <div class="bordered-box">
+                @addedMove.Name (ID: @addedMove.MoveId)
+            </div>
+        }
+    </div>
+</div>

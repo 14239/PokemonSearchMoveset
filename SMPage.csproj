@@ -13,6 +13,9 @@
     <ExternalConsole>true</ExternalConsole>
   </PropertyGroup>
   <ItemGroup>
+    <None Remove="Components\" />
+  </ItemGroup>
+  <ItemGroup>
     <None Include="wwwroot\database\abilities.csv" />
     <None Include="wwwroot\database\ability_changelog.csv" />
     <None Include="wwwroot\database\ability_changelog_prose.csv" />
@@ -195,4 +198,7 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Components\" />
+  </ItemGroup>
 </Project>

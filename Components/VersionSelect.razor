@@ -1,0 +1,73 @@
+﻿@using SMPage.Models
+@using SMPage.Services
+@using Microsoft.JSInterop
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+
+@code {
+
+    [Parameter] public EventCallback<int> OnVersionSelected { get; set; }
+
+    // 현재 선택된 언어와 관련된 로직도 추가하겠습니다.
+    [Parameter] public int CurrentLanguageId { get; set; }
+
+    public List<VersionGroupCSV> VersionGroups { get; set; }
+
+    public List<VersionCSV> Versions { get; set; }
+
+    public List<VersionNameCSV> VersionNames { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        Versions = await CsvLoader.LoadVersions(Http, "database/versions.csv") ?? new List<VersionCSV>();
+        VersionNames = await CsvLoader.LoadVersionNames(Http, "database/version_names.csv") ?? new List<VersionNameCSV>();
+        VersionGroups = await CsvLoader.LoadVersionGroups(Http, "database/version_groups.csv") ?? new List<VersionGroupCSV>();
+        // 필요한 나머지 데이터 로딩 코드 추가
+    }
+
+    public string GetDisplayNameForVersionGroup(int versionGroupId)
+    {
+        var versionIdsInGroup = Versions.Where(v => v.VersionGroupId == versionGroupId).Select(v => v.Id);
+        var displayNames = versionIdsInGroup.Select(id => VersionNames.FirstOrDefault(vn => vn.VersionId == id && vn.LocalLanguageId == CurrentLanguageId)?.Name);
+
+        var finalDisplayName = string.Join("-", displayNames.Where(name => !string.IsNullOrEmpty(name)));
+
+        if (string.IsNullOrEmpty(finalDisplayName))
+        {
+            finalDisplayName = VersionGroups.FirstOrDefault(vg => vg.Id == versionGroupId)?.Identifier;
+        }
+
+        return finalDisplayName;
+    }
+}
+
+<details>
+    <summary>Select Game Versions:</summary>
+    @{
+        if (VersionGroups != null)
+        {
+            var currentGeneration = -1; // 초기 세대 값을 설정
+
+            foreach (var versionGroup in VersionGroups.OrderBy(vg => vg.GenerationId))
+            {
+                if (versionGroup.GenerationId != currentGeneration) // 현재 세대와 이전 세대가 다른 경우
+                {
+                    currentGeneration = versionGroup.GenerationId;
+                    <h6>Generation @currentGeneration</h6> // 현재 세대를 제목으로 출력
+                }
+
+                string displayName = GetDisplayNameForVersionGroup(versionGroup.Id);
+                <h6>
+                    <input type="radio" id="@versionGroup.Id" value="@versionGroup.Id" />
+                    <label for="@versionGroup.Id">@displayName</label><br />
+                </h6>
+            }
+        }
+    }
+</details>
+
