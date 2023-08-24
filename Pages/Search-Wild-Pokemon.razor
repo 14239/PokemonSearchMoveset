@@ -13,6 +13,7 @@
     // CSV 로드
 
     private List<PokemonMoveCSV> AllPokemonMoves { get; set; } = new List<PokemonMoveCSV>();
+    private List<PokemonSpeciesNameCSV> PokemonNames;
 
     protected override void OnInitialized()
     {
@@ -26,7 +27,16 @@
     {
         if (!IsDataLoaded)
         {
+            Console.WriteLine("Loading data..."); // 디버그 메시지 추가
             await LoadData();
+            if (AllPokemonMoves.Count > 0)
+            {
+                Console.WriteLine($"Loaded {AllPokemonMoves.Count} rows."); // 데이터 로드 성공 확인
+            }
+            else
+            {
+                Console.WriteLine("No data loaded."); // 데이터 로드 실패 확인
+            }
             IsDataLoaded = true;
             StateHasChanged();  // UI 갱신
         }
@@ -35,6 +45,8 @@
     private async Task LoadData()
     {
         AllPokemonMoves = await CsvLoader.LoadPokemonMoves(Http, "database/pokemon_moves.csv") ?? new List<PokemonMoveCSV>();
+        PokemonNames = await CsvLoader.LoadPokemonNames(http: Http, path: "database/pokemon_species_names.csv");
+
     }
 
 
@@ -61,15 +73,17 @@
 
 
 
-    // 데이터 가져오
+    // 데이터 가져오기
 
     private int SelectedVersionId { get; set; }
 
     private void HandleVersionChecked(int checkedVersionId)
     {
-        // 선택된 버전 정보 처리
-        //SelectedVersionId = checkedVersionId;
+        SelectedVersionId = checkedVersionId;
+        Console.WriteLine($"Version selected: {SelectedVersionId}"); // 디버그 메시지 추가
     }
+
+
 
     public List<MoveNameCSV> SelectedMoves { get; set; } = new List<MoveNameCSV>();
 
@@ -81,18 +95,51 @@
     }
 
 
+    private List<PokemonMoveCSV> FilteredPokemonMoves { get; set; } = new List<PokemonMoveCSV>();
 
-    private void FindWildPokemon()
+    private void FilterPokemonMoves()
     {
-        // 와일드 포켓몬을 검색하는 로직을 여기에 추가합니다.
+        // 조건에 맞는 데이터만 필터링합니다.
+        Console.WriteLine(SelectedVersionId);
+        Console.WriteLine(SelectedMoves);
+
+        FilteredPokemonMoves = AllPokemonMoves.Where(pm =>
+            pm.VersionGroupId == SelectedVersionId &&
+            pm.PokemonMoveMethodId == 1 &&
+            SelectedMoves.Any(sm => sm.MoveId == pm.MoveId)
+        ).ToList();
+
+        // 필터링 결과 확인
+        Console.WriteLine($"Found {FilteredPokemonMoves.Count} matching moves."); // 디버그 메시지 추가
     }
+
+    private async Task FindWildPokemon()
+    {
+        // CSV 데이터가 로드되지 않았다면 로드합니다.
+        await LoadDataOnDemand();
+
+        // 포켓몬 데이터 필터링
+        FilterPokemonMoves();
+    }
+
+    public string GetPokemonNameById(int speciesId)
+    {
+        return PokemonNames.FirstOrDefault(pn => pn.SpeciesId == speciesId && pn.LocalLanguageId == CurrentLanguageId)?.Name ?? $"Pokemon {speciesId}";
+    }
+
+    public string GetMoveNameById(int moveId)
+    {
+        return SelectedMoves.FirstOrDefault(m => m.MoveId == moveId && m.LocalLanguageId == CurrentLanguageId)?.Name ?? $"Move {moveId}";
+    }
+
+
 }
 
 
 <VersionSelect CurrentLanguageId="@CurrentLanguageId" OnVersionSelected="HandleVersionChecked" />
 
 <div class="row">
-<MoveSearch CurrentLanguageId="@CurrentLanguageId" OnMoveSelected="HandleMoveSelected" />
+    <MoveSearch CurrentLanguageId="@CurrentLanguageId" OnMoveSelected="HandleMoveSelected" />
     <div class="col-md-6">
 
         <!-- 선택된 기술 목록 -->
@@ -109,4 +156,30 @@
         </div>
     </div>
 </div>
-    <button @onclick="FindWildPokemon">Find Wild Pokemon</button>
+<button @onclick="FindWildPokemon">Find Wild Pokemon</button>
+@if (FilteredPokemonMoves.Any())
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Pokemon ID</th>
+                <th>Pokemon Name</th>
+                <th>Move Name</th>
+                <th>Level</th>
+
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var move in FilteredPokemonMoves)
+            {
+                var moveName = SelectedMoves.FirstOrDefault(m => m.MoveId == move.MoveId)?.Name ?? move.MoveId.ToString();
+                <tr>
+                    <td>@move.PokemonId</td>
+                    <td>@GetPokemonNameById(move.PokemonId)</td>
+                    <td>@GetMoveNameById(move.MoveId)</td>
+                    <td>@move.Level</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

@@ -44,6 +44,15 @@
 
         return finalDisplayName;
     }
+
+
+    // 버전 체크
+    private void HandleVersionGroupChange(ChangeEventArgs e, int versionGroupId)
+    {
+        OnVersionSelected.InvokeAsync(versionGroupId);
+    }
+
+
 }
 
 <details>
@@ -63,9 +72,10 @@
 
                 string displayName = GetDisplayNameForVersionGroup(versionGroup.Id);
                 <h6>
-                    <input type="radio" id="@versionGroup.Id" value="@versionGroup.Id" />
+                    <input type="radio" name="gameVersion" id="@versionGroup.Id" value="@versionGroup.Id" @onchange="@(e => HandleVersionGroupChange(e, versionGroup.Id))" />
                     <label for="@versionGroup.Id">@displayName</label><br />
                 </h6>
+
             }
         }
     }

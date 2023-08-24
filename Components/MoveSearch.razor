@@ -6,6 +6,7 @@
 
 @code {
 
+
     [Parameter] public EventCallback<MoveNameCSV> OnMoveSelected { get; set; }
 
     [Parameter] public int CurrentLanguageId { get; set; }
@@ -33,6 +34,7 @@
     private async Task LoadData()
     {
         MoveNames = await CsvLoader.LoadMoveNames(Http, "database/move_names.csv");
+
         SearchMoves();
 
     }
@@ -85,7 +87,6 @@
             SearchMoves(); // 검색어가 변경될 때마다 검색 메서드를 호출합니다.
         }
     }
-
 
 }
 
