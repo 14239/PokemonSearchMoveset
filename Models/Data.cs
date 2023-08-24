@@ -70,7 +70,7 @@
         public int GenerationId { get; set; }
         public int TypeId { get; set; }
         public int? Power { get; set; } // nullable because some moves might not have power
-        public int? Pp { get; set; }
+        public  int? Pp { get; set; }
         public int? Accuracy { get; set; }
         public int Priority { get; set; }
         public int TargetId { get; set; }
@@ -86,7 +86,7 @@
     {
         public int MoveId { get; set; }
         public int LocalLanguageId { get; set; }
-        public string Name { get; set; }
+        public string? Name { get; set; }
     }
 
 

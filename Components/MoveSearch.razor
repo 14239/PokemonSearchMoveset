@@ -6,7 +6,7 @@
 
 @code {
 
-    [Parameter] public EventCallback<List<MoveNameCSV>> OnMoveSelected { get; set; }
+    [Parameter] public EventCallback<MoveNameCSV> OnMoveSelected { get; set; }
 
     [Parameter] public int CurrentLanguageId { get; set; }
 
@@ -23,7 +23,7 @@
         }
     }
     public List<MoveNameCSV> MatchedMoves { get; set; } = new List<MoveNameCSV>();
-    public List<MoveNameCSV> AddedMoves { get; set; } = new List<MoveNameCSV>();
+    //public List<MoveNameCSV> AddedMoves { get; set; } = new List<MoveNameCSV>();
 
     protected override async Task OnInitializedAsync()
     {
@@ -58,10 +58,12 @@
         return new MarkupString(highlighted);
     }
 
-    public void AddMove(MoveNameCSV selectedMove)
+    public async void AddMove(MoveNameCSV selectedMove)
     {
-        AddedMoves.Add(selectedMove);
+        Console.WriteLine($"Move selected: {selectedMove.Name}");
+        await OnMoveSelected.InvokeAsync(selectedMove);
     }
+
 
 
 
@@ -87,38 +89,18 @@
 
 }
 
-<style>
-    .bordered-box {
-        border: 1px solid #d1d1d1;
-        padding: 10px;
-        margin: 10px 0;
-        border-radius: 5px;
-    }
-</style>
 
-<div class="row">
     <div class="col-md-6">
         <!-- 검색과 검색 결과 -->
         <h5>Search for a move:</h5>
         <input @bind="SearchTerm" @bind:event="oninput" type="text" placeholder="Enter move name..." />
-        <div class="search-results bordered-box" style="max-height: 300px; overflow-y: auto;">
+        <div class="bordered-box-container" style="max-height: 300px; overflow-y: auto;">
             @foreach (var move in MatchedMoves)
             {
-                <div @onclick="() => AddMove(move)">
+                <div @onclick="() => AddMove(move)" class="selectable-text">
                     @HighlightMatch(move.Name)
                 </div>
             }
+
         </div>
     </div>
-
-    <div class="col-md-6">
-        <!-- 선택된 기술 목록 -->
-        <h5>Selected Moves:</h5>
-        @foreach (var addedMove in AddedMoves)
-        {
-            <div class="bordered-box">
-                @addedMove.Name (ID: @addedMove.MoveId)
-            </div>
-        }
-    </div>
-</div>
