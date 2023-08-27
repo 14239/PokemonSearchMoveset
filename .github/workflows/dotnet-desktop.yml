@@ -62,7 +62,7 @@ jobs:
     - name: Build
       run: dotnet build SMPage.csproj --no-restore
     - name: Test
-      run: dotnet test --no-build --verbosity normal
+      run: dotnet test PokemonSearchMoveset.sln --no-build --verbosity normal
 #      working-directory: PokemonSearchMoveset
     - name: Publish with dotnet
       run: dotnet publish SMPage.csproj --configuration Release --output build
