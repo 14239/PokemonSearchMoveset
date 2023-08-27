@@ -72,7 +72,7 @@ jobs:
       with:
         token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         branch: gh-pages # The branch the action should deploy to.
-        foler: . # The folder the action should deploy.
+        folder: . # The folder the action should deploy.
         single-commit: true
 
     # Install the .NET Core workload
