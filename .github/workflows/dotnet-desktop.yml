@@ -57,16 +57,16 @@ jobs:
         dotnet-version: 6.0.x
     - name: Restore dependencies
       run: dotnet restore
-      working-directory: Blazor_wasm_Test/Blazor_wasm_Test
+      working-directory: PokemonSearchMoveset/PokemonSearchMoveset
     - name: Build
       run: dotnet build --no-restore
-      working-directory: Blazor_wasm_Test/Blazor_wasm_Test
+      working-directory: PokemonSearchMoveset/PokemonSearchMoveset
     - name: Test
       run: dotnet test --no-build --verbosity normal
-      working-directory: Blazor_wasm_Test/Blazor_wasm_Test
+      working-directory: PokemonSearchMoveset/PokemonSearchMoveset
     - name: Publish with dotnet
       run: dotnet publish --configuration Release --output build
-      working-directory: Blazor_wasm_Test/Blazor_wasm_Test
+      working-directory: PokemonSearchMoveset/PokemonSearchMoveset
     - name: Deploy to Github Pages
       uses: JamesIves/github-pages-deploy-action@releases/v3
       with:
