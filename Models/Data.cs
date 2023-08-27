@@ -6,12 +6,12 @@
     {
         public int Id { get; set; }
         public int VersionGroupId { get; set; }
-        public string Identifier { get; set; }
+        public string? Identifier { get; set; }
     }
     public class VersionGroupCSV // 같은 버전끼리 묶어서 셈(ex 레드,그린) (version_groups.csv)
     {
         public int Id { get; set; }
-        public string Identifier { get; set; }
+        public string? Identifier { get; set; }
         public int GenerationId { get; set; }
         public int Order { get; set; }
     }
@@ -20,7 +20,7 @@
     {
         public int VersionId { get; set; }
         public int LocalLanguageId { get; set; }
-        public string Name { get; set; }
+        public string? Name { get; set; }
     }
 
 
@@ -46,7 +46,7 @@
     {
         public int SpeciesId { get; set; }                 // 포켓몬 종족 번호
         public int LocalLanguageId { get; set; }    // 언어 ID. 1:일본어 3:한국어 9:영어
-        public string Name { get; set; }            // 언어에 따른 포켓몬 이름
+        public string? Name { get; set; }            // 언어에 따른 포켓몬 이름
 
     }
 
@@ -54,7 +54,7 @@
     {
         public int PokemonFormId { get; set; }                 // 폼 번호 (안농ABC)
         public int LocalLanguageId { get; set; }    // 언어 ID. 1:일본어 3:한국어 9:영어
-        public string FormName { get; set; }            // 언어에 따른 포켓몬 이름
+        public string? FormName { get; set; }            // 언어에 따른 포켓몬 이름
 
     }
 
@@ -87,7 +87,7 @@
     public class MoveCSV
     {
         public int Id { get; set; }
-        public string Identifier { get; set; }
+        public string? Identifier { get; set; }
         public int GenerationId { get; set; }
         public int TypeId { get; set; }
         public int? Power { get; set; } // nullable because some moves might not have power
@@ -132,6 +132,6 @@
     {
         public int TypeId { get; set; }
         public int LocalLanguageId { get; set; }
-        public string Name { get; set; }
+        public string? Name { get; set; }
     }
 }

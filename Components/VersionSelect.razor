@@ -11,11 +11,11 @@
     // 현재 선택된 언어와 관련된 로직도 추가하겠습니다.
     [Parameter] public int CurrentLanguageId { get; set; }
 
-    public List<VersionGroupCSV> VersionGroups { get; set; }
+    public List<VersionGroupCSV>? VersionGroups { get; set; }
 
-    public List<VersionCSV> Versions { get; set; }
+    public List<VersionCSV>? Versions { get; set; }
 
-    public List<VersionNameCSV> VersionNames { get; set; }
+    public List<VersionNameCSV>? VersionNames { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -30,16 +30,16 @@
         // 필요한 나머지 데이터 로딩 코드 추가
     }
 
-    public string GetDisplayNameForVersionGroup(int versionGroupId)
+    public string? GetDisplayNameForVersionGroup(int versionGroupId)
     {
-        var versionIdsInGroup = Versions.Where(v => v.VersionGroupId == versionGroupId).Select(v => v.Id);
-        var displayNames = versionIdsInGroup.Select(id => VersionNames.FirstOrDefault(vn => vn.VersionId == id && vn.LocalLanguageId == CurrentLanguageId)?.Name);
+        var versionIdsInGroup = Versions?.Where(v => v.VersionGroupId == versionGroupId).Select(v => v.Id);
+        var displayNames = versionIdsInGroup?.Select(id => VersionNames.FirstOrDefault(vn => vn.VersionId == id && vn.LocalLanguageId == CurrentLanguageId)?.Name);
 
         var finalDisplayName = string.Join("-", displayNames.Where(name => !string.IsNullOrEmpty(name)));
 
         if (string.IsNullOrEmpty(finalDisplayName))
         {
-            finalDisplayName = VersionGroups.FirstOrDefault(vg => vg.Id == versionGroupId)?.Identifier;
+            finalDisplayName = VersionGroups?.FirstOrDefault(vg => vg.Id == versionGroupId)?.Identifier;
         }
 
         return finalDisplayName;
@@ -70,7 +70,7 @@
                     <h6>Generation @currentGeneration</h6> // 현재 세대를 제목으로 출력
                 }
 
-                string displayName = GetDisplayNameForVersionGroup(versionGroup.Id);
+                string? displayName = GetDisplayNameForVersionGroup(versionGroup.Id);
                 <h6>
                     <input type="radio" name="gameVersion" id="@versionGroup.Id" value="@versionGroup.Id" @onchange="@(e => HandleVersionGroupChange(e, versionGroup.Id))" />
                     <label for="@versionGroup.Id">@displayName</label><br />

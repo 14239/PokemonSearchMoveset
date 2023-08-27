@@ -17,7 +17,7 @@
     // ...
 
 
-    public List<MoveNameCSV> MoveNames { get; set; }
+    public List<MoveNameCSV> MoveNames { get; set; } = new List<MoveNameCSV>();
 
     private string _searchTerm = string.Empty;
     public string SearchTerm
@@ -85,7 +85,7 @@
         {
             previousLanguageId = CurrentLanguageId;
             SearchMoves(); // 검색어가 변경될 때마다 검색 메서드를 호출합니다.
-            //await OnLanguageChanged.InvokeAsync(CurrentLanguageId); // 언어가 바뀌면 이벤트를 트리거합니다.
+            // await OnLanguageChanged.InvokeAsync(CurrentLanguageId); // 언어가 바뀌면 이벤트를 트리거합니다.
         }
 
 

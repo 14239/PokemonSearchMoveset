@@ -14,13 +14,13 @@
     // CSV 로드
 
     private List<PokemonMoveCSV> AllPokemonMoves { get; set; } = new List<PokemonMoveCSV>();
-    private List<PokemonCSV> Pokemons;
-    private List<PokemonSpeciesNameCSV> PokemonNames;
-    private List<PokemonFormCSV> PokemonForms;
-    private List<PokemonFormNameCSV> PokemonFormNames;
-    private List<PokemonTypeCSV> PokemonTypes;
-    private List<PokemonTypePastCSV> PokemonTypesPast;
-    private List<TypeNameCSV> TypeNames;
+    private List<PokemonCSV> Pokemons { get; set; } = new List<PokemonCSV>();
+    private List<PokemonSpeciesNameCSV> PokemonNames { get; set; } = new List<PokemonSpeciesNameCSV>();
+    private List<PokemonFormCSV> PokemonForms { get; set; } = new List<PokemonFormCSV>();
+    private List<PokemonFormNameCSV>? PokemonFormNames;
+    private List<PokemonTypeCSV>? PokemonTypes;
+    private List<PokemonTypePastCSV>? PokemonTypesPast;
+    private List<TypeNameCSV>? TypeNames;
 
     protected override void OnInitialized()
     {

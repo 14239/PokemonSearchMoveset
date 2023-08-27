@@ -15,14 +15,14 @@
 
 
 @code {
-    private string inputId;
-    private string pokemonName;
+    private string? inputId;
+    private string? pokemonName;
 
     private void ShowPokemonName()
     {
 
         int id = int.Parse(inputId); // 사용자가 입력한 문자열을 숫자로 변환
-        var pokemon = pokemonNames.FirstOrDefault(p => p.SpeciesId == id && p.LocalLanguageId == 3);
+        var pokemon = pokemonNames?.FirstOrDefault(p => p.SpeciesId == id && p.LocalLanguageId == 3);
         if (pokemon != null)
         {
             pokemonName = pokemon.Name;
@@ -34,7 +34,7 @@
     }
 
     // 초기 데이터 로딩용. 실제로는 이곳에서 CSV 파일에서 데이터를 로드할 수 있습니다.
-    private List<PokemonSpeciesNameCSV> pokemonNames;
+    private List<PokemonSpeciesNameCSV>? pokemonNames;
 
     protected override async Task OnInitializedAsync()
     {
