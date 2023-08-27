@@ -51,11 +51,11 @@ namespace SMPage.Services
             var csvData = await http.GetStringAsync(path);
             return ParseCsvData(csvData, tokens => new PokemonCSV
             {
-                id = int.Parse(tokens[0]),
+                Id = int.Parse(tokens[0]),
                 identifier = tokens[1],
                 SpeciesId = int.Parse(tokens[2]),
-                order = int.Parse(tokens[3]),
-                isDefault = bool.Parse(tokens[4])
+                order = string.IsNullOrWhiteSpace(tokens[6]) ? 0 : int.Parse(tokens[6]),
+                isDefault = tokens[7] == "1"
             });
         }
 
@@ -69,6 +69,33 @@ namespace SMPage.Services
                 Name = tokens[2]
             });
         }
+
+        public static async Task<List<PokemonFormNameCSV>> LoadPokemonFormNames(HttpClient http, string path)
+        {
+            var csvData = await http.GetStringAsync(path);
+            return ParseCsvData(csvData, tokens => new PokemonFormNameCSV
+            {
+                PokemonFormId = int.Parse(tokens[0]),
+                LocalLanguageId = int.Parse(tokens[1]),
+                FormName = tokens[2]
+            });
+        }
+
+
+        public static async Task<List<PokemonFormCSV>> LoadPokemonForms(HttpClient http, string path)
+        {
+            var csvData = await http.GetStringAsync(path);
+            return ParseCsvData(csvData, tokens => new PokemonFormCSV
+            {
+                Id = int.Parse(tokens[0]),
+                PokemonFormId = int.TryParse(tokens[2], out var orderValue) ? orderValue : 0,
+                PokemonId = int.Parse(tokens[3]),
+                IsDefault = tokens[5] == "1",
+                IsBattleOnly = tokens[6] == "1",
+            });
+        }
+
+
 
         public static async Task<List<PokemonMoveCSV>> LoadPokemonMoves(HttpClient http, string path)
         {
@@ -117,6 +144,44 @@ namespace SMPage.Services
                 Name = tokens[2]
             });
         }
+
+
+        public static async Task<List<PokemonTypeCSV>> LoadPokemonTypes(HttpClient http, string path)
+        {
+            var csvData = await http.GetStringAsync(path);
+            return ParseCsvData(csvData, tokens => new PokemonTypeCSV
+            {
+                PokemonId = int.Parse(tokens[0]),
+                TypeId = int.Parse(tokens[1]),
+                Slot = int.Parse(tokens[2]),
+
+            });
+        }
+
+        public static async Task<List<PokemonTypePastCSV>> LoadPokemonTypesPast(HttpClient http, string path)
+        {
+            var csvData = await http.GetStringAsync(path);
+            return ParseCsvData(csvData, tokens => new PokemonTypePastCSV
+            {
+                PokemonId = int.Parse(tokens[0]),
+                GenerationId = int.Parse(tokens[1]),
+                TypeId = int.Parse(tokens[2]),
+                Slot = int.Parse(tokens[3]),
+            });
+        }
+
+        public static async Task<List<TypeNameCSV>> LoadTypeNames(HttpClient http, string path)
+        {
+            var csvData = await http.GetStringAsync(path);
+            return ParseCsvData(csvData, tokens => new TypeNameCSV
+            {
+                TypeId = int.Parse(tokens[0]),
+                LocalLanguageId = int.Parse(tokens[1]),
+                Name = tokens[2],
+            });
+        }
+
+
 
         private static List<T> ParseCsvData<T>(string csvData, Func<string[], T> parseFunc)
         {

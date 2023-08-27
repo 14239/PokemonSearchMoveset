@@ -11,6 +11,12 @@
 
     [Parameter] public int CurrentLanguageId { get; set; }
 
+    // 위에서 [Parameter] 선언 부분 밑에 추가해주세요.
+    //[Parameter] public EventCallback<int> OnLanguageChanged { get; set; }
+
+    // ...
+
+
     public List<MoveNameCSV> MoveNames { get; set; }
 
     private string _searchTerm = string.Empty;
@@ -78,8 +84,10 @@
         if (CurrentLanguageId != previousLanguageId)
         {
             previousLanguageId = CurrentLanguageId;
-            await LoadData(); // 언어가 바뀌면 데이터를 다시 로드합니다.
+            SearchMoves(); // 검색어가 변경될 때마다 검색 메서드를 호출합니다.
+            //await OnLanguageChanged.InvokeAsync(CurrentLanguageId); // 언어가 바뀌면 이벤트를 트리거합니다.
         }
+
 
         if (SearchTerm != previousSearchTerm)
         {

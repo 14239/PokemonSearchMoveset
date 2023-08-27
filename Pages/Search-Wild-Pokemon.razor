@@ -5,6 +5,7 @@
 @inject IJSRuntime JSRuntime
 @using SMPage.Components
 
+
 @page "/search-wild-pokemon"
 
 @code {
@@ -13,7 +14,13 @@
     // CSV 로드
 
     private List<PokemonMoveCSV> AllPokemonMoves { get; set; } = new List<PokemonMoveCSV>();
+    private List<PokemonCSV> Pokemons;
     private List<PokemonSpeciesNameCSV> PokemonNames;
+    private List<PokemonFormCSV> PokemonForms;
+    private List<PokemonFormNameCSV> PokemonFormNames;
+    private List<PokemonTypeCSV> PokemonTypes;
+    private List<PokemonTypePastCSV> PokemonTypesPast;
+    private List<TypeNameCSV> TypeNames;
 
     protected override void OnInitialized()
     {
@@ -45,7 +52,13 @@
     private async Task LoadData()
     {
         AllPokemonMoves = await CsvLoader.LoadPokemonMoves(Http, "database/pokemon_moves.csv") ?? new List<PokemonMoveCSV>();
+        Pokemons = await CsvLoader.LoadPokemons(http: Http, path: "database/pokemon.csv");
         PokemonNames = await CsvLoader.LoadPokemonNames(http: Http, path: "database/pokemon_species_names.csv");
+        PokemonForms = await CsvLoader.LoadPokemonForms(http: Http, path: "database/pokemon_forms.csv");
+        PokemonFormNames = await CsvLoader.LoadPokemonFormNames(http: Http, path: "database/pokemon_form_names.csv");
+        TypeNames = await CsvLoader.LoadTypeNames(http: Http, path: "database/type_names.csv");
+        PokemonTypes = await CsvLoader.LoadPokemonTypes(http: Http, path: "database/pokemon_types.csv");
+        PokemonTypesPast = await CsvLoader.LoadPokemonTypesPast(http: Http, path: "database/pokemon_types_past.csv");
 
     }
 
@@ -61,17 +74,13 @@
     {
         if (_previousLanguageId != CurrentLanguageId)
         {
-            UpdateUIForLanguageChange();
+            StateHasChanged();
             _previousLanguageId = CurrentLanguageId;
         }
     }
 
-    private void UpdateUIForLanguageChange()
-    {
-        StateHasChanged();
-    }
 
-
+    private MoveSearch moveSearchComponent;
 
     // 데이터 가져오기
 
@@ -85,33 +94,51 @@
 
 
 
-    public List<MoveNameCSV> SelectedMoves { get; set; } = new List<MoveNameCSV>();
+    public List<int> SelectedMoves { get; set; } = new List<int>();
 
     private void HandleMoveSelected(MoveNameCSV selectedMove)
     {
-        SelectedMoves.Add(selectedMove);
-        Console.WriteLine($"Handling move: {selectedMove.Name}");
+        if (!SelectedMoves.Contains(selectedMove.MoveId))  // 중복 선택 체크
+        {
+            SelectedMoves.Add(selectedMove.MoveId);
+            StateHasChanged();
+        }
+        else
+        {
+            SelectedMoves.Remove(selectedMove.MoveId);
+            StateHasChanged();
+        }
+    }
+
+    private void RemoveSelectedMove(int moveId)
+    {
+        SelectedMoves.Remove(moveId);
         StateHasChanged();
     }
 
 
+
+
     private List<PokemonMoveCSV> FilteredPokemonMoves { get; set; } = new List<PokemonMoveCSV>();
+    private List<dynamic> groupedMoves = new List<dynamic>();
+
 
     private void FilterPokemonMoves()
     {
         // 조건에 맞는 데이터만 필터링합니다.
         Console.WriteLine(SelectedVersionId);
-        Console.WriteLine(SelectedMoves);
+        Console.WriteLine(string.Join(", ", SelectedMoves)); // int 리스트이므로 그대로 출력
 
         FilteredPokemonMoves = AllPokemonMoves.Where(pm =>
-            pm.VersionGroupId == SelectedVersionId &&
-            pm.PokemonMoveMethodId == 1 &&
-            SelectedMoves.Any(sm => sm.MoveId == pm.MoveId)
+            pm.VersionGroupId == SelectedVersionId &&   // 선택한 버
+            pm.PokemonMoveMethodId == 1 &&              // 레벨업해서 기술을 배워야
+            SelectedMoves.Contains(pm.MoveId)
         ).ToList();
 
         // 필터링 결과 확인
         Console.WriteLine($"Found {FilteredPokemonMoves.Count} matching moves."); // 디버그 메시지 추가
     }
+
 
     private async Task FindWildPokemon()
     {
@@ -120,16 +147,120 @@
 
         // 포켓몬 데이터 필터링
         FilterPokemonMoves();
+
+        this.groupedMoves = FilteredPokemonMoves.GroupBy(move => move.PokemonId)
+                .Select(group => (dynamic)new
+                {
+                    PokemonId = group.Key,
+                    Moves = group.ToList()
+                }).ToList();
+
+
+        Console.WriteLine($"Number of grouped pokemons: {groupedMoves.Count}");
+        StateHasChanged();
     }
 
-    public string GetPokemonNameById(int speciesId)
+
+    public string GetPokemonNameById(int id)
     {
-        return PokemonNames.FirstOrDefault(pn => pn.SpeciesId == speciesId && pn.LocalLanguageId == CurrentLanguageId)?.Name ?? $"Pokemon {speciesId}";
+        // PokemonCSV 목록에서 주어진 id와 일치하는 species_id를 찾습니다.
+        int speciesId = Pokemons.FirstOrDefault(p => p.Id == id)?.SpeciesId ?? 0;
+
+        // 해당 species_id와 현재 언어 설정을 사용하여 PokemonNames 목록에서 기본 이름을 찾습니다.
+        string baseName = PokemonNames.FirstOrDefault(pn => pn.SpeciesId == speciesId && pn.LocalLanguageId == CurrentLanguageId)?.Name ?? $"Pokemon {id}";
+
+        // 만약 id가 10,000 이상이면 PokemonFormNames에서 폼 이름을 추가적으로 찾아 반환합니다.
+        if (id >= 10000)
+        {
+            var formId = PokemonForms.FirstOrDefault(pf => pf.PokemonId == id)?.Id ?? 0;
+            var formName = PokemonFormNames.FirstOrDefault(pfn => pfn.PokemonFormId == formId && pfn.LocalLanguageId == CurrentLanguageId)?.FormName;
+            if (!string.IsNullOrEmpty(formName))
+            {
+                return $"{baseName} {formName}";
+            }
+        }
+
+        return baseName;
     }
+
+
+
 
     public string GetMoveNameById(int moveId)
     {
-        return SelectedMoves.FirstOrDefault(m => m.MoveId == moveId && m.LocalLanguageId == CurrentLanguageId)?.Name ?? $"Move {moveId}";
+        var matchingMoveName = moveSearchComponent.MoveNames.FirstOrDefault(mn => mn.MoveId == moveId && mn.LocalLanguageId == CurrentLanguageId);
+        return matchingMoveName?.Name ?? $"Move {moveId}";
+    }
+
+
+
+
+    public int GetSpeciesIdById(int Id)
+    {
+        return Pokemons.FirstOrDefault(p => p.Id == Id)?.SpeciesId ?? 0;
+    }
+
+    public string GetTypeNameById(int typeId, int languageId)
+    {
+        return TypeNames.FirstOrDefault(tn => tn.TypeId == typeId && tn.LocalLanguageId == languageId)?.Name ?? string.Empty;
+    }
+
+    public (string Type1, string Type2) GetPokemonTypesById(int pokemonId)
+    {
+        var types = PokemonTypes.Where(pt => pt.PokemonId == pokemonId).ToList();
+
+        string type1 = types.FirstOrDefault(t => t.Slot == 1) != null ? GetTypeNameById(types.First(t => t.Slot == 1).TypeId, CurrentLanguageId) : string.Empty;
+        string type2 = types.FirstOrDefault(t => t.Slot == 2) != null ? GetTypeNameById(types.First(t => t.Slot == 2).TypeId, CurrentLanguageId) : string.Empty;
+
+        return (type1, type2);
+    }
+
+
+    // 표 정렬
+    private enum SortColumn
+    {
+        SpeciesId,
+        Name,
+        NumberOfMoves,
+        MoveName,
+        Level
+    }
+
+    private SortColumn CurrentSortColumn { get; set; } = SortColumn.SpeciesId;
+    private bool IsAscendingSort { get; set; } = true;
+
+    private void SortData(SortColumn column)
+    {
+        if (CurrentSortColumn == column)
+        {
+            IsAscendingSort = !IsAscendingSort;
+        }
+        else
+        {
+            CurrentSortColumn = column;
+            IsAscendingSort = true;
+        }
+
+        switch (column)
+        {
+            case SortColumn.Name:
+                groupedMoves = IsAscendingSort ?
+                    groupedMoves.OrderBy(group => GetPokemonNameById(group.PokemonId)).ToList() :
+                    groupedMoves.OrderByDescending(group => GetPokemonNameById(group.PokemonId)).ToList();
+                break;
+            case SortColumn.SpeciesId:
+                groupedMoves = IsAscendingSort ?
+                    groupedMoves.OrderBy(group => GetSpeciesIdById(group.PokemonId)).ToList() :
+                    groupedMoves.OrderByDescending(group => GetSpeciesIdById(group.PokemonId)).ToList();
+                break;
+            case SortColumn.NumberOfMoves:
+                groupedMoves = IsAscendingSort ?
+                    groupedMoves.OrderBy(group => group.Moves.Count).ToList() :
+                    groupedMoves.OrderByDescending(group => group.Moves.Count).ToList();
+                break;
+        }
+
+        StateHasChanged();
     }
 
 
@@ -139,21 +270,21 @@
 <VersionSelect CurrentLanguageId="@CurrentLanguageId" OnVersionSelected="HandleVersionChecked" />
 
 <div class="row">
-    <MoveSearch CurrentLanguageId="@CurrentLanguageId" OnMoveSelected="HandleMoveSelected" />
+    <MoveSearch CurrentLanguageId="@CurrentLanguageId" @ref="moveSearchComponent" OnMoveSelected="HandleMoveSelected" />
     <div class="col-md-6">
 
         <!-- 선택된 기술 목록 -->
         <h5>Selected Moves:</h5>
         <div class="gap"></div>
         <div class="bordered-box-container">
-            @foreach (var addedMove in SelectedMoves)
+            @foreach (var moveId in SelectedMoves)
             {
-                <div>
-                    @addedMove.Name (ID: @addedMove.MoveId)
-
+                <div @onclick="() => RemoveSelectedMove(moveId)" class="selectable-text">
+                    @GetMoveNameById(moveId) (ID: @moveId)
                 </div>
             }
         </div>
+
     </div>
 </div>
 <button @onclick="FindWildPokemon">Find Wild Pokemon</button>
@@ -162,24 +293,61 @@
     <table class="table">
         <thead>
             <tr>
-                <th>Pokemon ID</th>
-                <th>Pokemon Name</th>
+                <th @onclick="() => SortData(SortColumn.SpeciesId)">
+                    Pokemon No.
+                    @if (CurrentSortColumn == SortColumn.SpeciesId)
+                    {
+                        <span class="sort-arrow">@((IsAscendingSort) ? "⬆️" : "⬇️")</span>
+                    }
+                </th>
+                <th @onclick="() => SortData(SortColumn.Name)">
+                    Pokemon Name
+                    @if (CurrentSortColumn == SortColumn.Name)
+                    {
+                        <span class="sort-arrow">@((IsAscendingSort) ? "⬆️" : "⬇️")</span>
+                    }
+                </th>
+                <th @onclick="() => SortData(SortColumn.NumberOfMoves)">
+                    Number of Moves
+                    @if (CurrentSortColumn == SortColumn.NumberOfMoves)
+                    {
+                        <span class="sort-arrow">@((IsAscendingSort) ? "⬆️" : "⬇️")</span>
+                    }
+                </th>
+                <th>Type 1</th>
+                <th>Type 2</th>
                 <th>Move Name</th>
                 <th>Level</th>
-
             </tr>
         </thead>
+
+
+
         <tbody>
-            @foreach (var move in FilteredPokemonMoves)
+            @foreach (var group in groupedMoves)
             {
-                var moveName = SelectedMoves.FirstOrDefault(m => m.MoveId == move.MoveId)?.Name ?? move.MoveId.ToString();
-                <tr>
-                    <td>@move.PokemonId</td>
-                    <td>@GetPokemonNameById(move.PokemonId)</td>
-                    <td>@GetMoveNameById(move.MoveId)</td>
-                    <td>@move.Level</td>
-                </tr>
+                bool firstRowForPokemon = true;
+                foreach (var move in group.Moves)
+                {
+                    var types = GetPokemonTypesById(group.PokemonId);
+                    <tr>
+                        @if (firstRowForPokemon)
+                        {
+                            <td rowspan="@group.Moves.Count">@GetSpeciesIdById(group.PokemonId)</td>
+                            <td rowspan="@group.Moves.Count">@GetPokemonNameById(group.PokemonId)</td>
+                            <td rowspan="@group.Moves.Count">@group.Moves.Count</td>
+                            <td rowspan="@group.Moves.Count">@types.Item1</td>
+                            <td rowspan="@group.Moves.Count">@types.Item2</td>
+                            firstRowForPokemon = false;
+                        }
+                        <td>@GetMoveNameById(move.MoveId)</td>
+                        <td>@(move.Level == 0 ? "Evo." : move.Level.ToString())</td>
+                    </tr>
+                }
             }
         </tbody>
+
+
+
     </table>
 }

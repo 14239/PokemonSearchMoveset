@@ -30,8 +30,8 @@
     {
         //id,identifier,species_id,height,weight,base_experience,order,is_default
 
-        public int id { get; set; }                 // 데이터 ID. 폼 체인지는 10000부터 시작 
-        public string identifier { get; set; }      // 영문 명칭
+        public int Id { get; set; }                 // 데이터 ID. 폼 체인지는 10000부터 시작 
+        public string? identifier { get; set; }      // 영문 명칭
 
         public int SpeciesId { get; set; }
 
@@ -47,6 +47,27 @@
         public int SpeciesId { get; set; }                 // 포켓몬 종족 번호
         public int LocalLanguageId { get; set; }    // 언어 ID. 1:일본어 3:한국어 9:영어
         public string Name { get; set; }            // 언어에 따른 포켓몬 이름
+
+    }
+
+    public class PokemonFormNameCSV // (pokemon_species_names.csv)
+    {
+        public int PokemonFormId { get; set; }                 // 폼 번호 (안농ABC)
+        public int LocalLanguageId { get; set; }    // 언어 ID. 1:일본어 3:한국어 9:영어
+        public string FormName { get; set; }            // 언어에 따른 포켓몬 이름
+
+    }
+
+    public class PokemonFormCSV // (pokemon_species_names.csv)
+    {
+        // id,identifier,form_identifier,pokemon_id,introduced_in_version_group_id,is_default,is_battle_only,is_mega,form_order,order
+
+        public int Id { get; set; }                 // 포켓몬 폼 번호 (abc 포함이라 10440 최대)
+        public int PokemonFormId { get; set; }                // 폼 번호 (안농ABC)
+        public int PokemonId { get; set; }    // 포켓몬 종족 번호 (abc 제외로 10271 최대)
+        public bool IsDefault { get; set; } // 기본 폼인지 여부
+        public bool IsBattleOnly { get; set; } // 전투에서만 쓰이는 폼인지(그렇다면 야생에서 볼 일 없다)
+
 
     }
 
@@ -89,6 +110,28 @@
         public string? Name { get; set; }
     }
 
+    // 타입 세팅
 
 
+    public class PokemonTypeCSV    // ABC제외 
+    {
+        public int PokemonId { get; set; }
+        public int TypeId { get; set; }
+        public int Slot { get; set; }
+    }
+
+    public class PokemonTypePastCSV // 2세대 강철 4세대 로토무 6세대 페어리 이 타입
+    {
+        public int PokemonId { get; set; }
+        public int GenerationId { get; set; }
+        public int TypeId { get; set; }
+        public int Slot { get; set; }
+    }
+
+    public class TypeNameCSV
+    {
+        public int TypeId { get; set; }
+        public int LocalLanguageId { get; set; }
+        public string Name { get; set; }
+    }
 }

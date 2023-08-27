@@ -124,3 +124,7 @@ a, .btn-link {
 .selectable-text:hover {
     background-color: #f0f0f0; /* 원하는 배경색으로 조정하세요. */
 }
+
+.sort-arrow {
+    margin-left: 5px; /* Add space between the column name and the arrow */
+}
