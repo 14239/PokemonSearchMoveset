@@ -17,10 +17,10 @@
     private List<PokemonCSV> Pokemons { get; set; } = new List<PokemonCSV>();
     private List<PokemonSpeciesNameCSV> PokemonNames { get; set; } = new List<PokemonSpeciesNameCSV>();
     private List<PokemonFormCSV> PokemonForms { get; set; } = new List<PokemonFormCSV>();
-    private List<PokemonFormNameCSV>? PokemonFormNames;
-    private List<PokemonTypeCSV>? PokemonTypes;
-    private List<PokemonTypePastCSV>? PokemonTypesPast;
-    private List<TypeNameCSV>? TypeNames;
+    private List<PokemonFormNameCSV> PokemonFormNames = new List<PokemonFormNameCSV>();
+    private List<PokemonTypeCSV> PokemonTypes = new List<PokemonTypeCSV>();
+    private List<PokemonTypePastCSV> PokemonTypesPast = new List<PokemonTypePastCSV>();
+    private List<TypeNameCSV> TypeNames = new List<TypeNameCSV>();
 
     protected override void OnInitialized()
     {
@@ -80,7 +80,7 @@
     }
 
 
-    private MoveSearch moveSearchComponent;
+    private MoveSearch moveSearchComponent = new MoveSearch();
 
     // 데이터 가져오기
 

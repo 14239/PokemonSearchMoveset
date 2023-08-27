@@ -76,8 +76,8 @@
     @code {
 
         private List<VersionGroupCSV> VersionGroups = new List<VersionGroupCSV>();
-        private List<VersionCSV> Versions;
-        private List<VersionNameCSV> VersionNames;
+        private List<VersionCSV> Versions = new List<VersionCSV>();
+        private List<VersionNameCSV> VersionNames = new List<VersionNameCSV>();
 
         protected override async Task OnInitializedAsync()
         {
@@ -134,21 +134,25 @@
 
         // 버전 체크박스
 
-        private string GetDisplayNameForVersionGroup(int versionGroupId)
+        public string GetDisplayNameForVersionGroup(int versionGroupId)
         {
             var versionIdsInGroup = Versions.Where(v => v.VersionGroupId == versionGroupId).Select(v => v.Id);
-            var displayNames = versionIdsInGroup.Select(id => VersionNames.FirstOrDefault(vn => vn.VersionId == id && vn.LocalLanguageId == CurrentLanguageId)?.Name);
+            var displayNames = versionIdsInGroup
+                .Select(id => VersionNames.FirstOrDefault(vn => vn.VersionId == id && vn.LocalLanguageId == CurrentLanguageId))
+                .Where(vn => vn != null)
+                .Select(vn => vn.Name);
 
             var finalDisplayName = string.Join("-", displayNames.Where(name => !string.IsNullOrEmpty(name)));
 
-            // 만약 빈 문자열이면 VersionGroupCSV의 Identifier로 대체합니다.
             if (string.IsNullOrEmpty(finalDisplayName))
             {
-                finalDisplayName = VersionGroups.FirstOrDefault(vg => vg.Id == versionGroupId)?.Identifier;
+                var versionGroup = VersionGroups.FirstOrDefault(vg => vg.Id == versionGroupId);
+                finalDisplayName = versionGroup?.Identifier ?? "Unknown";  // "Unknown" is a fallback in case everything is null.
             }
 
             return finalDisplayName;
         }
+
 
 
         // 기술 검색

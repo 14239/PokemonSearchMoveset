@@ -11,7 +11,7 @@
     public class VersionGroupCSV // 같은 버전끼리 묶어서 셈(ex 레드,그린) (version_groups.csv)
     {
         public int Id { get; set; }
-        public string? Identifier { get; set; }
+        public string Identifier { get; set; } = "";
         public int GenerationId { get; set; }
         public int Order { get; set; }
     }
@@ -20,7 +20,7 @@
     {
         public int VersionId { get; set; }
         public int LocalLanguageId { get; set; }
-        public string? Name { get; set; }
+        public string Name { get; set; } = "";
     }
 
 
@@ -31,7 +31,7 @@
         //id,identifier,species_id,height,weight,base_experience,order,is_default
 
         public int Id { get; set; }                 // 데이터 ID. 폼 체인지는 10000부터 시작 
-        public string? identifier { get; set; }      // 영문 명칭
+        public string identifier { get; set; } = "";      // 영문 명칭
 
         public int SpeciesId { get; set; }
 
@@ -107,7 +107,7 @@
     {
         public int MoveId { get; set; }
         public int LocalLanguageId { get; set; }
-        public string? Name { get; set; }
+        public string Name { get; set; } = "";
     }
 
     // 타입 세팅
