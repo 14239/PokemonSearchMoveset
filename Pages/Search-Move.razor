@@ -140,7 +140,7 @@
             var displayNames = versionIdsInGroup
                 .Select(id => VersionNames.FirstOrDefault(vn => vn.VersionId == id && vn.LocalLanguageId == CurrentLanguageId))
                 .Where(vn => vn != null)
-                .Select(vn => vn.Name);
+                .Select(vn => vn!.Name);
 
             var finalDisplayName = string.Join("-", displayNames.Where(name => !string.IsNullOrEmpty(name)));
 
