@@ -153,7 +153,9 @@
                 .Select(group => (dynamic)new
                 {
                     PokemonId = group.Key,
-                    Moves = group.ToList()
+                    Moves = group.ToList(),
+                    UniqueMoveCount = group.Select(m => m.MoveId).Distinct().Count()
+
                 }).ToList();
 
 
@@ -349,7 +351,7 @@
                         {
                             <td rowspan="@group.Moves.Count">@GetSpeciesIdById(group.PokemonId)</td>
                             <td rowspan="@group.Moves.Count">@GetPokemonNameById(group.PokemonId)</td>
-                            <td rowspan="@group.Moves.Count">@group.Moves.Count</td>
+                            <td rowspan="@group.Moves.Count">@group.UniqueMoveCount</td>
                             <td rowspan="@group.Moves.Count">@types.Item1</td>
                             <td rowspan="@group.Moves.Count">@types.Item2</td>
                             firstRowForPokemon = false;
