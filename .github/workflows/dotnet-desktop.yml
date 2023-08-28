@@ -70,7 +70,7 @@ jobs:
     - name: Deploy to GitHub Pages
       uses: JamesIves/github-pages-deploy-action@v4.4.3      
       with:
-        token: ${{ secrets.MY_TOKEN }}
+        token: ${{ secrets.GITHUB_TOKEN }}
         branch: gh-pages # The branch the action should deploy to.
         folder: . # The folder the action should deploy.
         single-commit: true
