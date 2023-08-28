@@ -67,11 +67,6 @@ jobs:
     - name: Publish with dotnet
       run: dotnet publish SMPage.csproj --configuration Release --output build
 #      working-directory: PokemonSearchMoveset
-    - name: Set base href for GitHub Pages
-      run: |
-        cd build/wwwroot
-        sed -i 's|<base href="/"|<base href="/repo-name/"|' index.html
-
     - name: Deploy to GitHub Pages
       uses: JamesIves/github-pages-deploy-action@v4.4.3      
       with:
