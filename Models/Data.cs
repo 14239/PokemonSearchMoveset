@@ -1,4 +1,4 @@
-﻿namespace SMPage.Models
+﻿namespace PokemonSearchMoveset.Models
 {
     // 언어, 국가 세팅
 

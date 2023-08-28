@@ -1,4 +1,4 @@
-﻿using SMPage.Models;
+﻿using PokemonSearchMoveset.Models;
 using System.Collections.Generic;
 using System.Formats.Asn1;
 using System.Globalization;
@@ -7,7 +7,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 
-namespace SMPage.Services
+namespace PokemonSearchMoveset.Services
 {
 
     public static class CsvLoader

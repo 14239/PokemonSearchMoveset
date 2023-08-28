@@ -48,17 +48,6 @@
     }
     private int _selectedLanguageId = 3;
 
-    /*
-    private void OnLanguageChanged()
-    {
-        var selectedLanguage = Languages.FirstOrDefault(l => l.Id == SelectedLanguageId);
-        if (selectedLanguage != null)
-        {
-            JSRuntime.InvokeVoidAsync("localStorage.setItem", "selectedLanguageId", SelectedLanguageId.ToString());
-            JSRuntime.InvokeVoidAsync("localStorage.setItem", "selectedLanguageName", selectedLanguage.Identifier);
-        }
-    }
-    */
 
     [CascadingParameter]
     public EventCallback<int> OnLanguageChangedEventCallback { get; set; }
