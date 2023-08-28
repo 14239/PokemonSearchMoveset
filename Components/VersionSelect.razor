@@ -93,7 +93,10 @@
                 string? displayName = GetDisplayNameForVersionGroup(versionGroup.Id);
                 <h6>
                     <input type="radio" name="gameVersion" id="@versionGroup.Id" value="@versionGroup.Id"
-                    @onchange="@(e => HandleVersionGroupChange(e, versionGroup.Id))" />
+                    @onchange="@(e => HandleVersionGroupChange(e, versionGroup.Id))"
+                           checked="@(versionGroup.Id == SelectedVersionGroupId)" />
+
+
                     <label for="@versionGroup.Id">@displayName</label><br />
                 </h6>
 
