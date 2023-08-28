@@ -68,7 +68,7 @@
 
     [CascadingParameter(Name = "SelectedLanguageId")]
     public int CurrentLanguageId { get; set; }
-
+    public int CurrentGenerationId { get; set; }
 
     protected override void OnParametersSet()
     {
@@ -80,6 +80,7 @@
     }
 
 
+    private VersionSelect versionSelectComponent = new VersionSelect();
     private MoveSearch moveSearchComponent = new MoveSearch();
 
     // 데이터 가져오기
@@ -208,12 +209,25 @@
     public (string Type1, string Type2) GetPokemonTypesById(int pokemonId)
     {
         var types = PokemonTypes.Where(pt => pt.PokemonId == pokemonId).ToList();
+        var typePast = PokemonTypesPast.FirstOrDefault(ptp => ptp.PokemonId == pokemonId && ptp.GenerationId >= versionSelectComponent.CurrentGenerationId);
 
-        string type1 = types.FirstOrDefault(t => t.Slot == 1) != null ? GetTypeNameById(types.First(t => t.Slot == 1).TypeId, CurrentLanguageId) : string.Empty;
-        string type2 = types.FirstOrDefault(t => t.Slot == 2) != null ? GetTypeNameById(types.First(t => t.Slot == 2).TypeId, CurrentLanguageId) : string.Empty;
-
-        return (type1, type2);
+        if (typePast != null)
+        {
+            // 만약 조건에 맞는 PokemonTypePast가 있으면 해당 타입을 사용합니다.
+            string type1 = typePast.Slot == 1 ? GetTypeNameById(typePast.TypeId, CurrentLanguageId) : string.Empty;
+            string type2 = typePast.Slot == 2 ? GetTypeNameById(typePast.TypeId, CurrentLanguageId) : string.Empty;
+            return (type1, type2);
+        }
+        else
+        {
+            // 그렇지 않으면 기본 PokemonTypes를 사용합니다.
+            string type1 = types.FirstOrDefault(t => t.Slot == 1) != null ? GetTypeNameById(types.First(t => t.Slot == 1).TypeId, CurrentLanguageId) : string.Empty;
+            string type2 = types.FirstOrDefault(t => t.Slot == 2) != null ? GetTypeNameById(types.First(t => t.Slot == 2).TypeId, CurrentLanguageId) : string.Empty;
+            return (type1, type2);
+        }
     }
+
+
 
 
     // 표 정렬
@@ -267,7 +281,7 @@
 }
 
 
-<VersionSelect CurrentLanguageId="@CurrentLanguageId" OnVersionSelected="HandleVersionChecked" />
+<VersionSelect CurrentLanguageId="@CurrentLanguageId"  OnVersionSelected="HandleVersionChecked" @ref="versionSelectComponent" />
 
 <div class="row">
     <MoveSearch CurrentLanguageId="@CurrentLanguageId" @ref="moveSearchComponent" OnMoveSelected="HandleMoveSelected" />

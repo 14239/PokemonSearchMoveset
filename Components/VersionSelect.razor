@@ -5,11 +5,23 @@
 @inject IJSRuntime JSRuntime
 
 @code {
-
-    [Parameter] public EventCallback<int> OnVersionSelected { get; set; }
+    private int SelectedVersionGroupId = 25; // 초기값으로 DefaultCheckedId를 사용
 
     // 현재 선택된 언어와 관련된 로직도 추가하겠습니다.
     [Parameter] public int CurrentLanguageId { get; set; }
+
+    [Parameter] public EventCallback<int> OnVersionSelected { get; set; }
+
+    public int CurrentGenerationId
+    {
+        get
+        {
+            var selectedGroup = VersionGroups.FirstOrDefault(vg => vg.Id == SelectedVersionGroupId);
+            return selectedGroup?.GenerationId ?? -1;
+        }
+
+    }
+
 
     public List<VersionGroupCSV> VersionGroups { get; set; } = new List<VersionGroupCSV>();
 
@@ -20,7 +32,10 @@
     protected override async Task OnInitializedAsync()
     {
         await LoadData();
+        HandleVersionGroupChange(null, SelectedVersionGroupId); // 기본 id를 사용하여 이벤트 발생시키기
+        StateHasChanged();  // Force a re-render of the component.
     }
+
 
     private async Task LoadData()
     {
@@ -53,6 +68,7 @@
     // 버전 체크
     private void HandleVersionGroupChange(ChangeEventArgs e, int versionGroupId)
     {
+        SelectedVersionGroupId = versionGroupId;
         OnVersionSelected.InvokeAsync(versionGroupId);
     }
 
@@ -76,7 +92,8 @@
 
                 string? displayName = GetDisplayNameForVersionGroup(versionGroup.Id);
                 <h6>
-                    <input type="radio" name="gameVersion" id="@versionGroup.Id" value="@versionGroup.Id" @onchange="@(e => HandleVersionGroupChange(e, versionGroup.Id))" />
+                    <input type="radio" name="gameVersion" id="@versionGroup.Id" value="@versionGroup.Id"
+                    @onchange="@(e => HandleVersionGroupChange(e, versionGroup.Id))" />
                     <label for="@versionGroup.Id">@displayName</label><br />
                 </h6>
 
