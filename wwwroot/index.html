@@ -5,7 +5,11 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>PokemonSearchMoveset</title>
-    <base href="/PokemonSearchMoveset/" />
+    <script>if (!location.hostname.includes('github.io')) { // 로컬 환경 판단
+            document.write('<base href="/" />');
+        } else {
+            document.write('<base href="/PokemonSearchMoveset/" />');
+        }</script>
     <link href="css/bootstrap/bootstrap.min.css" rel="stylesheet" />
     <link href="css/app.css" rel="stylesheet" />
     <link rel="icon" type="image/png" href="favicon.png" />
@@ -21,9 +25,8 @@
         <div class="loading-progress-text"></div>
     </div>
 
-<!-- Start Single Page Apps for GitHub Pages -->
-    <script type="text/javascript">
-        // Single Page Apps for GitHub Pages
+    <!-- Start Single Page Apps for GitHub Pages -->
+    <script type="text/javascript">// Single Page Apps for GitHub Pages
         // https://github.com/rafrex/spa-github-pages
         // Copyright (c) 2016 Rafael Pedicini, licensed under the MIT License
         // ----------------------------------------------------------------------
@@ -49,10 +52,9 @@
                     );
                 }
             }
-        }(window.location))
-    </script>
+        }(window.location))</script>
     <!-- End Single Page Apps for GitHub Pages -->
-    
+
     <div id="blazor-error-ui">
         An unhandled error has occurred.
         <a href="" class="reload">Reload</a>
