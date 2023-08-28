@@ -56,16 +56,16 @@ jobs:
       with:
         dotnet-version: 7.0.x
     - name: Restore dependencies
-      run: dotnet restore SMPage.csproj
+      run: dotnet restore PokemonSearchMoveset.csproj
 
 #      working-directory: PokemonSearchMoveset
     - name: Build
-      run: dotnet build SMPage.csproj --no-restore
+      run: dotnet build PokemonSearchMoveset.csproj --no-restore
     - name: Test
-      run: dotnet test SMPage.csproj --no-build --verbosity normal
+      run: dotnet test PokemonSearchMoveset.csproj --no-build --verbosity normal
 #      working-directory: PokemonSearchMoveset
     - name: Publish with dotnet
-      run: dotnet publish SMPage.csproj --configuration Release --output build
+      run: dotnet publish PokemonSearchMoveset.csproj --configuration Release --output build
 #      working-directory: PokemonSearchMoveset
     - name: Deploy to GitHub Pages
       uses: JamesIves/github-pages-deploy-action@v4.4.3      
