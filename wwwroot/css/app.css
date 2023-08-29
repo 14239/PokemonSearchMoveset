@@ -128,3 +128,21 @@ a, .btn-link {
 .sort-arrow {
     margin-left: 5px; /* Add space between the column name and the arrow */
 }
+
+
+.checkbox-container {
+    display: inline-block; /* 가로로 배열하기 위해 */
+    width: 33%; /* 전체 너비의 1/3 차지 */
+    box-sizing: border-box; /* padding 및 border를 포함한 너비 계산 */
+}
+
+.version-group-container {
+    display: flex;
+    flex-wrap: wrap;
+
+}
+
+.generation-container {
+    margin-right: 20px; /* 각 세대 사이에 간격을 줌 */
+
+}

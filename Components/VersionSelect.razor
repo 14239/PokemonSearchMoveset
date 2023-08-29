@@ -77,31 +77,31 @@
 
 <details>
     <summary>Select Game Versions:</summary>
-    @{
-        if (VersionGroups != null)
-        {
-            var currentGeneration = -1; // 초기 세대 값을 설정
-
-            foreach (var versionGroup in VersionGroups.OrderBy(vg => vg.GenerationId))
+    <div class="version-group-container">
+        @{
+            if (VersionGroups != null)
             {
-                if (versionGroup.GenerationId != currentGeneration) // 현재 세대와 이전 세대가 다른 경우
+                var groupedByVersion = VersionGroups.GroupBy(vg => vg.GenerationId).OrderBy(g => g.Key);
+
+                foreach (var group in groupedByVersion)
                 {
-                    currentGeneration = versionGroup.GenerationId;
-                    <h6>Generation @currentGeneration</h6> // 현재 세대를 제목으로 출력
+                    <div class="generation-container">
+                    @{
+                        <h6>Generation @group.Key</h6>
+                        foreach (var versionGroup in group)
+                        {
+                        string? displayName = GetDisplayNameForVersionGroup(versionGroup.Id);
+                        <h6>
+                            <input type="radio" name="gameVersion" id="@versionGroup.Id" value="@versionGroup.Id"
+                            @onchange="@(e => HandleVersionGroupChange(e, versionGroup.Id))"
+                                   checked="@(versionGroup.Id == SelectedVersionGroupId)" />
+                            <label for="@versionGroup.Id">@displayName</label>
+                        </h6>
+                        }
+                    }
+                    </div>
                 }
-
-                string? displayName = GetDisplayNameForVersionGroup(versionGroup.Id);
-                <h6>
-                    <input type="radio" name="gameVersion" id="@versionGroup.Id" value="@versionGroup.Id"
-                    @onchange="@(e => HandleVersionGroupChange(e, versionGroup.Id))"
-                           checked="@(versionGroup.Id == SelectedVersionGroupId)" />
-
-
-                    <label for="@versionGroup.Id">@displayName</label><br />
-                </h6>
-
             }
         }
-    }
+    </div>
 </details>
-
