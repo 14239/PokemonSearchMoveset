@@ -1,0 +1,117 @@
+﻿@using PokemonSearchMoveset.Models
+@using PokemonSearchMoveset.Services
+@using Microsoft.JSInterop
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+
+@code {
+
+
+    [Parameter] public EventCallback<AbilityNameCSV> OnAbilitySelected { get; set; }
+
+    [Parameter] public int CurrentLanguageId { get; set; }
+
+    // 위에서 [Parameter] 선언 부분 밑에 추가해주세요.
+    //[Parameter] public EventCallback<int> OnLanguageChanged { get; set; }
+
+    // ...
+
+
+    public List<AbilityNameCSV> AbilityNames { get; set; } = new List<AbilityNameCSV>();
+
+    private string _searchTerm = string.Empty;
+    public string SearchTerm
+    {
+        get => _searchTerm;
+        set
+        {
+            _searchTerm = value;
+            SearchAbilitys();
+        }
+    }
+    public List<AbilityNameCSV> MatchedAbilities { get; set; } = new List<AbilityNameCSV>();
+    //public List<AbilityNameCSV> AddedAbilitys { get; set; } = new List<AbilityNameCSV>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        AbilityNames = await CsvLoader.LoadAbilityNames(Http, "database/ability_names.csv");
+
+        SearchAbilitys();
+
+    }
+
+    public void SearchAbilitys()
+    {
+        if (string.IsNullOrEmpty(SearchTerm))
+        {
+            MatchedAbilities = AbilityNames.Where(mn => mn.LocalLanguageId == CurrentLanguageId).OrderBy(mn => mn.AbilityId).ToList();
+            return;
+        }
+        MatchedAbilities = AbilityNames.Where(mn => mn.Name.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) && mn.LocalLanguageId == CurrentLanguageId).ToList();
+    }
+
+    public MarkupString HighlightMatch(string abilityName)
+    {
+        if (string.IsNullOrEmpty(SearchTerm))
+        {
+            return new MarkupString(abilityName);
+        }
+
+        var highlighted = abilityName.Replace(SearchTerm, $"<strong>{SearchTerm}</strong>", StringComparison.OrdinalIgnoreCase);
+        return new MarkupString(highlighted);
+    }
+
+    public async void AddAbility(AbilityNameCSV selectedAbility)
+    {
+        Console.WriteLine($"Ability selected: {selectedAbility.Name}");
+        await OnAbilitySelected.InvokeAsync(selectedAbility);
+    }
+
+
+
+
+    private string previousSearchTerm = string.Empty;
+
+    private int previousLanguageId;
+
+    protected override Task OnParametersSetAsync()
+    {
+        if (CurrentLanguageId != previousLanguageId)
+        {
+            previousLanguageId = CurrentLanguageId;
+            SearchAbilitys(); // 검색어가 변경될 때마다 검색 메서드를 호출합니다.
+            // await OnLanguageChanged.InvokeAsync(CurrentLanguageId); // 언어가 바뀌면 이벤트를 트리거합니다.
+        }
+
+
+        if (SearchTerm != previousSearchTerm)
+        {
+            previousSearchTerm = SearchTerm;
+            SearchAbilitys(); // 검색어가 변경될 때마다 검색 메서드를 호출합니다.
+        }
+
+        return Task.CompletedTask; // 비동기 메서드이므로 완료된 Task를 반환합니다.
+
+    }
+
+}
+
+
+    
+        <!-- 검색과 검색 결과 -->
+        <h5>Search for an ability:</h5>
+        <input @bind="SearchTerm" @bind:event="oninput" type="text" placeholder="Enter ability name..." />
+        <div class="bordered-box-container" style="max-height: 300px; overflow-y: auto;">
+            @foreach (var ability in MatchedAbilities)
+            {
+                <div @onclick="() => AddAbility(ability)" class="selectable-text">
+                    @HighlightMatch(ability.Name)
+                </div>
+            }
+
+        </div>

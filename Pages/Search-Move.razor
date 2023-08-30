@@ -42,14 +42,27 @@
             </details>
         </h5>
     </div>
-
+     
 
 
     <div class="row">
         <div class="col-md-6">
             <!-- 검색과 검색 결과 -->
             <h5>Search for a move:</h5>
-            <input @bind="SearchTerm" @bind:event="oninput" type="text" placeholder="Enter move name..." />
+        <!-- 기존의 input element 삭제 -->
+        <!--<input @bind="SearchTerm" @bind:event="oninput" type="text" placeholder="Enter move name..." />-->
+
+        <BlazoredTypeahead SearchMethod="SearchForMoves"
+        @bind-Value="selectedMove"
+                           Placeholder="Enter move name...">
+            <SelectedTemplate>
+                @context.Name
+            </SelectedTemplate>
+            <ResultTemplate>
+                @context.Name
+            </ResultTemplate>
+        </BlazoredTypeahead>
+
             <div class="search-results bordered-box" style="max-height: 300px; overflow-y: auto;">
                 @foreach (var move in matchedMoves)
                 {
@@ -153,6 +166,17 @@
             return finalDisplayName;
         }
 
+    private MoveNameCSV? selectedMove;
+
+    private Task<IEnumerable<MoveNameCSV>> SearchForMoves(string searchTerm)
+    {
+        if (string.IsNullOrEmpty(searchTerm))
+        {
+            return Task.FromResult(moveNames.Where(mn => mn.LocalLanguageId == CurrentLanguageId).OrderBy(mn => mn.MoveId).AsEnumerable());
+        }
+        var results = moveNames.Where(mn => mn.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) && mn.LocalLanguageId == CurrentLanguageId);
+        return Task.FromResult(results.AsEnumerable());
+    }
 
 
         // 기술 검색

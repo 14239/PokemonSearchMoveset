@@ -120,7 +120,7 @@
         public int Slot { get; set; }
     }
 
-    public class PokemonTypePastCSV // 2세대 강철 4세대 로토무 6세대 페어리 이 타입
+    public class PokemonTypePastCSV // 2세대 강철 4세대 로토무 6세대 페어리 타입
     {
         public int PokemonId { get; set; }
         public int GenerationId { get; set; }
@@ -133,5 +133,31 @@
         public int TypeId { get; set; }
         public int LocalLanguageId { get; set; }
         public string? Name { get; set; }
+    }
+
+
+    // 특성 세팅
+
+    public class AbilityCSV
+    {
+        public int Id { get; set; }
+        public string? Identifier { get; set; }
+        public int GenerationId { get; set; }
+        public bool IsMainSeries { get; set; }
+    }
+
+    public class AbilityNameCSV
+    {
+        public int AbilityId { get; set; }
+        public int LocalLanguageId { get; set; }
+        public string? Name { get; set; }
+    }
+
+    public class PokemonAbilityCSV
+    {
+        public int PokemonId { get; set; }
+        public int AbilityId { get; set; }
+        public bool IsHidden { get; set; }
+        public int Slot { get; set; }
     }
 }

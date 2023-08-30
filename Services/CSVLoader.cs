@@ -181,7 +181,40 @@ namespace PokemonSearchMoveset.Services
             });
         }
 
+        public static async Task<List<AbilityCSV>> LoadAbilities(HttpClient http, string path)
+        {
+            var csvData = await http.GetStringAsync(path);
+            return ParseCsvData(csvData, tokens => new AbilityCSV
+            {
+                Id = int.Parse(tokens[0]),
+                Identifier = tokens[1],
+                GenerationId = int.Parse(tokens[2]),
+                IsMainSeries = tokens[3] == "1",
 
+            });
+        }
+        public static async Task<List<AbilityNameCSV>> LoadAbilityNames(HttpClient http, string path)
+        {
+            var csvData = await http.GetStringAsync(path);
+            return ParseCsvData(csvData, tokens => new AbilityNameCSV
+            {
+                AbilityId = int.Parse(tokens[0]),
+                LocalLanguageId = int.Parse(tokens[1]),
+                Name = tokens[2],
+            });
+        }
+        public static async Task<List<PokemonAbilityCSV>> LoadPokemonAbilities(HttpClient http, string path)
+        {
+            var csvData = await http.GetStringAsync(path);
+            return ParseCsvData(csvData, tokens => new PokemonAbilityCSV
+            {
+                PokemonId = int.Parse(tokens[0]),
+                AbilityId = int.Parse(tokens[1]),
+                IsHidden = tokens[2] == "1",
+                Slot = int.Parse(tokens[3]),
+
+            });
+        }
 
         private static List<T> ParseCsvData<T>(string csvData, Func<string[], T> parseFunc)
         {
