@@ -4,13 +4,15 @@
 @inject HttpClient Http
 @inject IJSRuntime JSRuntime
 @using PokemonSearchMoveset.Components
+@inject DataService DataService
 
 
 @page "/search-a-pokemon"
 
 @code {
 
-
+	[Inject]
+	private DataService dataService { get; set; }
 	// CSV 로드
 
 	private List<PokemonAbilityCSV> AllPokemonAbilities { get; set; } = new List<PokemonAbilityCSV>();
@@ -23,45 +25,22 @@
 	private List<PokemonTypePastCSV> PokemonTypesPast = new List<PokemonTypePastCSV>();
 	private List<TypeNameCSV> TypeNames = new List<TypeNameCSV>();
 
+
+
 	protected override void OnInitialized()
 	{
+		
+		
 		//Task.Run(async () => await LoadData());
-	}
-
-
-	private bool IsDataLoaded { get; set; } = false;
-
-	private async Task LoadDataOnDemand()
-	{
-		if (!IsDataLoaded)
-		{
-			Console.WriteLine("Loading data..."); // 디버그 메시지 추가
-			await LoadData();
-			if (AllPokemonMoves.Count > 0)
-			{
-				Console.WriteLine($"Loaded {AllPokemonMoves.Count} rows."); // 데이터 로드 성공 확인
-			}
-			else
-			{
-				Console.WriteLine("No data loaded."); // 데이터 로드 실패 확인
-			}
-			IsDataLoaded = true;
-			StateHasChanged();  // UI 갱신
-		}
-	}
-
-	private async Task LoadData()
-	{
-		AllPokemonAbilities = await CsvLoader.LoadPokemonAbilities(Http, "database/pokemon_abilities.csv") ?? new List<PokemonAbilityCSV>();
-		AllPokemonMoves = await CsvLoader.LoadPokemonMoves(Http, "database/pokemon_moves.csv") ?? new List<PokemonMoveCSV>();
-		Pokemons = await CsvLoader.LoadPokemons(http: Http, path: "database/pokemon.csv");
-		PokemonNames = await CsvLoader.LoadPokemonNames(http: Http, path: "database/pokemon_species_names.csv");
-		PokemonForms = await CsvLoader.LoadPokemonForms(http: Http, path: "database/pokemon_forms.csv");
-		PokemonFormNames = await CsvLoader.LoadPokemonFormNames(http: Http, path: "database/pokemon_form_names.csv");
-		TypeNames = await CsvLoader.LoadTypeNames(http: Http, path: "database/type_names.csv");
-		PokemonTypes = await CsvLoader.LoadPokemonTypes(http: Http, path: "database/pokemon_types.csv");
-		PokemonTypesPast = await CsvLoader.LoadPokemonTypesPast(http: Http, path: "database/pokemon_types_past.csv");
-
+		AllPokemonAbilities = dataService.AllPokemonAbilities;
+		AllPokemonMoves = dataService.AllPokemonMoves;
+		Pokemons = dataService.Pokemons;
+		PokemonNames = dataService.PokemonNames;
+		PokemonForms = dataService.PokemonForms;
+		PokemonFormNames = dataService.PokemonFormNames;
+		TypeNames = dataService.TypeNames;
+		PokemonTypes = dataService.PokemonTypes;
+		PokemonTypesPast = dataService.PokemonTypesPast;
 	}
 
 
@@ -220,7 +199,7 @@
 	private async Task FindWildPokemon()
 	{
 		// CSV 데이터가 로드되지 않았다면 로드합니다.
-		await LoadDataOnDemand();
+		//await LoadDataOnDemand();
 
 		// 포켓몬 데이터 필터링
 		FilterPokemonMoves();

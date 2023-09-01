@@ -1,12 +1,46 @@
-﻿<Router AppAssembly="@typeof(App).Assembly">
-    <Found Context="routeData">
-        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
-        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
-    </Found>
-    <NotFound>
-        <PageTitle>Not found</PageTitle>
-        <LayoutView Layout="@typeof(MainLayout)">
-            <p role="alert">Sorry, there's nothing at this address.</p>
-        </LayoutView>
-    </NotFound>
-</Router>
+﻿
+@inject DataService DataService
+@if (DataService.IsDataLoaded)
+{
+    <Router AppAssembly="typeof(Program).Assembly">
+        <Found Context="routeData">
+            <RouteView RouteData="routeData" DefaultLayout="typeof(MainLayout)" />
+        </Found>
+        <NotFound>
+            <LayoutView Layout="typeof(MainLayout)">
+                <p>Sorry, there's nothing at this address.</p>
+            </LayoutView>
+        </NotFound>
+    </Router>
+}
+else
+{
+    <div class="progress" style="width:100%; height: 30px;">
+        <div class="progress-bar" role="progressbar" style="width: @DataService.LoadingProgress%" >@DataService.LoadingProgress% Loaded</div>
+    </div>
+    <p>Loading data...</p>
+}
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        if (!DataService.IsDataLoaded)
+        {
+            DataService.OnDataLoadProgress += UpdateUI;
+            await DataService.LoadAllDataAsync();
+            StateHasChanged();  // 데이터 로딩 후 UI를 강제로 다시 렌더링
+        }
+    }
+
+    private void UpdateUI()
+    {
+        StateHasChanged(); // UI 갱신 요청
+    }
+
+    // 컴포넌트가 파기될 때 이벤트 구독 해제
+    public void Dispose()
+    {
+        DataService.OnDataLoadProgress -= UpdateUI;
+    }
+}
+

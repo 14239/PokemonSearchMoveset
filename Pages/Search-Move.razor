@@ -3,225 +3,223 @@
 @using Microsoft.JSInterop
 @inject HttpClient Http
 @inject IJSRuntime JSRuntime
+@inject DataService DataService
 
 @page "/search-move"
 
-    <style>
-        .bordered-box {
-            border: 1px solid #d1d1d1;
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 5px;
-        }
-    </style>
+<style>
+	.bordered-box {
+		border: 1px solid #d1d1d1;
+		padding: 10px;
+		margin: 10px 0;
+		border-radius: 5px;
+	}
+</style>
 
 
-    <h3>기술 검색</h3>
-    <div>
-        <h5>
-            <details>
-                <summary>Select Game Versions:</summary>
-                @{
-                    var currentGeneration = -1; // 초기 세대 값을 설정
+<h3>기술 검색</h3>
+<div>
+	<h5>
+		<details>
+			<summary>Select Game Versions:</summary>
+			@{
+				var currentGeneration = -1; // 초기 세대 값을 설정
 
-                    foreach (var versionGroup in VersionGroups.OrderBy(vg => vg.GenerationId))
-                    {
-                        if (versionGroup.GenerationId != currentGeneration) // 현재 세대와 이전 세대가 다른 경우
-                        {
-                            currentGeneration = versionGroup.GenerationId;
-                            <h6>Generation @currentGeneration</h6> // 현재 세대를 제목으로 출력
-                        }
+				foreach (var versionGroup in VersionGroups.OrderBy(vg => vg.GenerationId))
+				{
+					if (versionGroup.GenerationId != currentGeneration) // 현재 세대와 이전 세대가 다른 경우
+					{
+						currentGeneration = versionGroup.GenerationId;
+						<h6>Generation @currentGeneration</h6>
+						// 현재 세대를 제목으로 출력
+					}
 
-                        string displayName = GetDisplayNameForVersionGroup(versionGroup.Id);
-                        <h6>
-                            <input type="checkbox" id="@versionGroup.Id" value="@versionGroup.Id" />
-                            <label for="@versionGroup.Id">@displayName</label><br />
-                        </h6>
-                    }
-                }
-            </details>
-        </h5>
-    </div>
-     
-
-
-    <div class="row">
-        <div class="col-md-6">
-            <!-- 검색과 검색 결과 -->
-            <h5>Search for a move:</h5>
-        <!-- 기존의 input element 삭제 -->
-        <!--<input @bind="SearchTerm" @bind:event="oninput" type="text" placeholder="Enter move name..." />-->
-
-        <BlazoredTypeahead SearchMethod="SearchForMoves"
-        @bind-Value="selectedMove"
-                           Placeholder="Enter move name...">
-            <SelectedTemplate>
-                @context.Name
-            </SelectedTemplate>
-            <ResultTemplate>
-                @context.Name
-            </ResultTemplate>
-        </BlazoredTypeahead>
-
-            <div class="search-results bordered-box" style="max-height: 300px; overflow-y: auto;">
-                @foreach (var move in matchedMoves)
-                {
-                    <div @onclick="() => AddMove(move)">
-                        @HighlightMatch(move.Name)
-                    </div>
-                }
-            </div>
-        </div>
-
-        <div class="col-md-6">
-            <!-- 선택된 기술 목록 -->
-            <h5>Selected Moves:</h5>
-            @foreach (var addedMove in addedMoves)
-            {
-                <div class="bordered-box">
-                    @addedMove.Name (ID: @addedMove.MoveId)
-                </div>
-            }
-        </div>
-    </div>
-
-
-    @code {
-
-        private List<VersionGroupCSV> VersionGroups = new List<VersionGroupCSV>();
-        private List<VersionCSV> Versions = new List<VersionCSV>();
-        private List<VersionNameCSV> VersionNames = new List<VersionNameCSV>();
-
-        protected override async Task OnInitializedAsync()
-        {
-            CurrentLanguageId = await GetSelectedLanguageId();
-            await LoadData();
-            SearchMoves(); // 여기서 호출하여 처음 로딩될 때 모든 기술을 표시
-            UpdateUIForLanguageChange(); // 언어 설정 후 UI 업데이트
-        }
-
-        private async Task LoadData()
-        {
-            Versions = await CsvLoader.LoadVersions(Http, "database/versions.csv");
-            VersionNames = await CsvLoader.LoadVersionNames(Http, "database/version_names.csv");
-            VersionGroups = await CsvLoader.LoadVersionGroups(Http, "database/version_groups.csv");
-            //moves = await CsvLoader.LoadMoves(Http, "database/moves.csv");
-            moveNames = await CsvLoader.LoadMoveNames(Http, "database/move_names.csv");
-        }
-
-        // 언어 정리
-
-        private int _previousLanguageId;
-
-        [CascadingParameter(Name = "SelectedLanguageId")]
-        public int CurrentLanguageId { get; set; } = 3; // 기본값은 3 (한국어)
-
-        [CascadingParameter]
-        public EventCallback<int> OnLanguageChangedFromMain { get; set; }
-
-        protected override void OnParametersSet()
-        {
-            if (_previousLanguageId != CurrentLanguageId)
-            {
-                UpdateUIForLanguageChange(); // 이 함수에서 UI 업데이트 로직을 수행합니다.
-                _previousLanguageId = CurrentLanguageId;
-            }
-        }
-
-        private void UpdateUIForLanguageChange()
-        {
-            StateHasChanged(); // 컴포넌트를 다시 렌더링하도록 요청
-        }
+					string displayName = GetDisplayNameForVersionGroup(versionGroup.Id);
+					<h6>
+						<input type="checkbox" id="@versionGroup.Id" value="@versionGroup.Id" />
+						<label for="@versionGroup.Id">@displayName</label><br />
+					</h6>
+				}
+			}
+		</details>
+	</h5>
+</div>
 
 
 
-        private async Task<int> GetSelectedLanguageId()
-        {
-            var storedLanguageId = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "selectedLanguageId");
-            if (string.IsNullOrEmpty(storedLanguageId) || !int.TryParse(storedLanguageId, out var languageId))
-            {
-                return 3; // 기본값은 3 (한국어)
-            }
-            return languageId;
-        }
+<div class="row">
+	<div class="col-md-6">
+		<!-- 검색과 검색 결과 -->
+		<h5>Search for a move:</h5>
+		<!-- 기존의 input element 삭제 -->
+		<!--<input @bind="SearchTerm" @bind:event="oninput" type="text" placeholder="Enter move name..." />-->
 
-        // 버전 체크박스
+		<BlazoredTypeahead SearchMethod="SearchForMoves"
+		@bind-Value="selectedMove"
+						   Placeholder="Enter move name...">
+			<SelectedTemplate>
+				@context.Name
+			</SelectedTemplate>
+			<ResultTemplate>
+				@context.Name
+			</ResultTemplate>
+		</BlazoredTypeahead>
 
-        public string GetDisplayNameForVersionGroup(int versionGroupId)
-        {
-            var versionIdsInGroup = Versions.Where(v => v.VersionGroupId == versionGroupId).Select(v => v.Id);
-            var displayNames = versionIdsInGroup
-                .Select(id => VersionNames.FirstOrDefault(vn => vn.VersionId == id && vn.LocalLanguageId == CurrentLanguageId))
-                .Where(vn => vn != null)
-                .Select(vn => vn!.Name);
+		<div class="search-results bordered-box" style="max-height: 300px; overflow-y: auto;">
+			@foreach (var move in matchedMoves)
+			{
+				<div @onclick="() => AddMove(move)">
+					@HighlightMatch(move.Name)
+				</div>
+			}
+		</div>
+	</div>
 
-            var finalDisplayName = string.Join("-", displayNames.Where(name => !string.IsNullOrEmpty(name)));
-
-            if (string.IsNullOrEmpty(finalDisplayName))
-            {
-                var versionGroup = VersionGroups.FirstOrDefault(vg => vg.Id == versionGroupId);
-                finalDisplayName = versionGroup?.Identifier ?? "Unknown";  // "Unknown" is a fallback in case everything is null.
-            }
-
-            return finalDisplayName;
-        }
-
-    private MoveNameCSV? selectedMove;
-
-    private Task<IEnumerable<MoveNameCSV>> SearchForMoves(string searchTerm)
-    {
-        if (string.IsNullOrEmpty(searchTerm))
-        {
-            return Task.FromResult(moveNames.Where(mn => mn.LocalLanguageId == CurrentLanguageId).OrderBy(mn => mn.MoveId).AsEnumerable());
-        }
-        var results = moveNames.Where(mn => mn.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) && mn.LocalLanguageId == CurrentLanguageId);
-        return Task.FromResult(results.AsEnumerable());
-    }
+	<div class="col-md-6">
+		<!-- 선택된 기술 목록 -->
+		<h5>Selected Moves:</h5>
+		@foreach (var addedMove in addedMoves)
+		{
+			<div class="bordered-box">
+				@addedMove.Name (ID: @addedMove.MoveId)
+			</div>
+		}
+	</div>
+</div>
 
 
-        // 기술 검색
+@code {
+	[Inject]
+	private DataService dataService { get; set; }
 
-        private string _searchTerm = string.Empty;
-        public string SearchTerm
-        {
-            get => _searchTerm;
-            set
-            {
-                _searchTerm = value;
-                SearchMoves();
-            }
-        }
+	private List<VersionGroupCSV> VersionGroups = new List<VersionGroupCSV>();
+	private List<VersionCSV> Versions = new List<VersionCSV>();
+	private List<VersionNameCSV> VersionNames = new List<VersionNameCSV>();
+	private List<MoveNameCSV> MoveNames = new List<MoveNameCSV>();
 
-        //private List<MoveCSV> moves;
-        private List<MoveNameCSV> moveNames = new List<MoveNameCSV>();
-        private List<MoveNameCSV> matchedMoves = new List<MoveNameCSV>();
-        private List<MoveNameCSV> addedMoves = new List<MoveNameCSV>(); // 추가된 기술 목록
+	protected override async Task OnInitializedAsync()
+	{
+		CurrentLanguageId = await GetSelectedLanguageId();
+		Versions = dataService.Versions;
+		VersionNames = dataService.VersionNames;
+		VersionGroups = dataService.VersionGroups;
+		MoveNames = dataService.MoveNames;
+		SearchMoves(); // 여기서 호출하여 처음 로딩될 때 모든 기술을 표시
+		UpdateUIForLanguageChange(); // 언어 설정 후 UI 업데이트
+	}
+
+	// 언어 정리
+
+	private int _previousLanguageId;
+
+	[CascadingParameter(Name = "SelectedLanguageId")]
+	public int CurrentLanguageId { get; set; } = 3; // 기본값은 3 (한국어)
+
+	[CascadingParameter]
+	public EventCallback<int> OnLanguageChangedFromMain { get; set; }
+
+	protected override void OnParametersSet()
+	{
+		if (_previousLanguageId != CurrentLanguageId)
+		{
+			UpdateUIForLanguageChange(); // 이 함수에서 UI 업데이트 로직을 수행합니다.
+			_previousLanguageId = CurrentLanguageId;
+		}
+	}
+
+	private void UpdateUIForLanguageChange()
+	{
+		StateHasChanged(); // 컴포넌트를 다시 렌더링하도록 요청
+	}
 
 
-        private void SearchMoves()
-        {
-            if (string.IsNullOrEmpty(SearchTerm))
-            {
-                matchedMoves = moveNames.Where(mn => mn.LocalLanguageId == CurrentLanguageId).OrderBy(mn => mn.MoveId).ToList();
-                return;
-            }
-            matchedMoves = moveNames.Where(mn => mn.Name.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) && mn.LocalLanguageId == CurrentLanguageId).ToList();
-        }
 
-        private MarkupString HighlightMatch(string moveName)
-        {
-            if (string.IsNullOrEmpty(SearchTerm))
-            {
-                return new MarkupString(moveName);
-            }
+	private async Task<int> GetSelectedLanguageId()
+	{
+		var storedLanguageId = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "selectedLanguageId");
+		if (string.IsNullOrEmpty(storedLanguageId) || !int.TryParse(storedLanguageId, out var languageId))
+		{
+			return 3; // 기본값은 3 (한국어)
+		}
+		return languageId;
+	}
 
-            var highlighted = moveName.Replace(SearchTerm, $"<strong>{SearchTerm}</strong>", StringComparison.OrdinalIgnoreCase);
-            return new MarkupString(highlighted);
-        }
+	// 버전 체크박스
+
+	public string GetDisplayNameForVersionGroup(int versionGroupId)
+	{
+		var versionIdsInGroup = Versions.Where(v => v.VersionGroupId == versionGroupId).Select(v => v.Id);
+		var displayNames = versionIdsInGroup
+			.Select(id => VersionNames.FirstOrDefault(vn => vn.VersionId == id && vn.LocalLanguageId == CurrentLanguageId))
+			.Where(vn => vn != null)
+			.Select(vn => vn!.Name);
+
+		var finalDisplayName = string.Join("-", displayNames.Where(name => !string.IsNullOrEmpty(name)));
+
+		if (string.IsNullOrEmpty(finalDisplayName))
+		{
+			var versionGroup = VersionGroups.FirstOrDefault(vg => vg.Id == versionGroupId);
+			finalDisplayName = versionGroup?.Identifier ?? "Unknown";  // "Unknown" is a fallback in case everything is null.
+		}
+
+		return finalDisplayName;
+	}
+
+	private MoveNameCSV? selectedMove;
+
+	private Task<IEnumerable<MoveNameCSV>> SearchForMoves(string searchTerm)
+	{
+		if (string.IsNullOrEmpty(searchTerm))
+		{
+			return Task.FromResult(MoveNames.Where(mn => mn.LocalLanguageId == CurrentLanguageId).OrderBy(mn => mn.MoveId).AsEnumerable());
+		}
+		var results = MoveNames.Where(mn => mn.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) && mn.LocalLanguageId == CurrentLanguageId);
+		return Task.FromResult(results.AsEnumerable());
+	}
 
 
-        private void AddMove(MoveNameCSV selectedMove)
-        {
-            addedMoves.Add(selectedMove);
-        }
+	// 기술 검색
+
+	private string _searchTerm = string.Empty;
+	public string SearchTerm
+	{
+		get => _searchTerm;
+		set
+		{
+			_searchTerm = value;
+			SearchMoves();
+		}
+	}
+
+	//private List<MoveCSV> moves;
+	private List<MoveNameCSV> matchedMoves = new List<MoveNameCSV>();
+	private List<MoveNameCSV> addedMoves = new List<MoveNameCSV>(); // 추가된 기술 목록
+
+
+	private void SearchMoves()
+	{
+		if (string.IsNullOrEmpty(SearchTerm))
+		{
+			matchedMoves = MoveNames.Where(mn => mn.LocalLanguageId == CurrentLanguageId).OrderBy(mn => mn.MoveId).ToList();
+			return;
+		}
+		matchedMoves = MoveNames.Where(mn => mn.Name.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) && mn.LocalLanguageId == CurrentLanguageId).ToList();
+	}
+
+	private MarkupString HighlightMatch(string moveName)
+	{
+		if (string.IsNullOrEmpty(SearchTerm))
+		{
+			return new MarkupString(moveName);
+		}
+
+		var highlighted = moveName.Replace(SearchTerm, $"<strong>{SearchTerm}</strong>", StringComparison.OrdinalIgnoreCase);
+		return new MarkupString(highlighted);
+	}
+
+
+	private void AddMove(MoveNameCSV selectedMove)
+	{
+		addedMoves.Add(selectedMove);
+	}
     }

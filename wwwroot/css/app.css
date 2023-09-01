@@ -146,3 +146,17 @@ a, .btn-link {
     margin-right: 20px; /* 각 세대 사이에 간격을 줌 */
 
 }
+
+.progress {
+    width: 100%; /* 로딩바의 너비를 화면 전체로 설정 */
+    max-width: none; /* max-width 속성 제거 */
+    height: 30px; /* 원하는 높이로 설정 */
+    background-color: #f3f3f3; /* 로딩바의 배경색 */
+    border-radius: 5px; /* 로딩바의 모서리를 둥글게 */
+}
+
+.progress-bar {
+    height: 100%; /* 로딩바 내부의 채워진 부분의 높이를 로딩바 전체 높이와 동일하게 설정 */
+    background-color: #007bff; /* 로딩바 채워진 부분의 색상 */
+    border-radius: 5px; /* 로딩바 내부의 채워진 부분의 모서리를 둥글게 */
+}

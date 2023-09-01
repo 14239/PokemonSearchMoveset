@@ -3,8 +3,13 @@
 @using Microsoft.JSInterop
 @inject HttpClient Http
 @inject IJSRuntime JSRuntime
+@inject DataService DataService
 
 @code {
+    [Inject]
+    private DataService dataService { get; set; }
+
+
     private int SelectedVersionGroupId = 25; // 초기값으로 DefaultCheckedId를 사용
 
     // 현재 선택된 언어와 관련된 로직도 추가하겠습니다.
@@ -24,26 +29,19 @@
 
 
     public List<VersionGroupCSV> VersionGroups { get; set; } = new List<VersionGroupCSV>();
-
     public List<VersionCSV> Versions { get; set; } = new List<VersionCSV>();
-
     public List<VersionNameCSV> VersionNames { get; set; } = new List<VersionNameCSV>();
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadData();
+        VersionGroups = dataService.VersionGroups;
+        Versions = dataService.Versions;
+        VersionNames = dataService.VersionNames;
+
         HandleVersionGroupChange(null, SelectedVersionGroupId); // 기본 id를 사용하여 이벤트 발생시키기
         StateHasChanged();  // Force a re-render of the component.
     }
 
-
-    private async Task LoadData()
-    {
-        Versions = await CsvLoader.LoadVersions(Http, "database/versions.csv") ?? new List<VersionCSV>();
-        VersionNames = await CsvLoader.LoadVersionNames(Http, "database/version_names.csv") ?? new List<VersionNameCSV>();
-        VersionGroups = await CsvLoader.LoadVersionGroups(Http, "database/version_groups.csv") ?? new List<VersionGroupCSV>();
-        // 필요한 나머지 데이터 로딩 코드 추가
-    }
 
     public string GetDisplayNameForVersionGroup(int versionGroupId)
     {
