@@ -106,7 +106,7 @@
     
         <!-- 검색과 검색 결과 -->
         <h5>Search for a move:</h5>
-        <input @bind="SearchTerm" @bind:event="oninput" type="text" placeholder="Enter move name..." />
+        <input @bind="SearchTerm" @bind:event="oninput" type="text" placeholder="Enter move name..." width="100%"/>
         <div class="bordered-box-container" style="max-height: 300px; overflow-y: auto;">
             @foreach (var move in MatchedMoves)
             {

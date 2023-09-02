@@ -29,8 +29,8 @@
 
 	protected override void OnInitialized()
 	{
-		
-		
+
+
 		//Task.Run(async () => await LoadData());
 		AllPokemonAbilities = dataService.AllPokemonAbilities;
 		AllPokemonMoves = dataService.AllPokemonMoves;
@@ -159,7 +159,7 @@
 		}
 	}
 
-	
+
 
 	private List<PokemonMoveCSV> FilteredPokemonMoves { get; set; } = new List<PokemonMoveCSV>();
 	private List<dynamic> groupedMoves = new List<dynamic>();
@@ -285,8 +285,16 @@
 
 	public string GetAbilityNameById(int abilityId)
 	{
-		var matchingAbilityName = abilitySearchComponent.AbilityNames.FirstOrDefault(mn => mn.AbilityId == abilityId && mn.LocalLanguageId == CurrentLanguageId);
-		return matchingAbilityName?.Name ?? $"Ability {abilityId}";
+		if(abilityId != -1)
+		{
+			var matchingAbilityName = abilitySearchComponent.AbilityNames.FirstOrDefault(mn => mn.AbilityId == abilityId && mn.LocalLanguageId == CurrentLanguageId);
+			return matchingAbilityName?.Name ?? $"Ability {abilityId}";
+
+		}
+		else
+		{
+			return "";
+		}
 
 
 

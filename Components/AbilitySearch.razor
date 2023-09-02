@@ -31,6 +31,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+        Console.WriteLine("특성 데이터 가져오기");
         AbilityNames = dataService.AbilityNames;
         SearchAbilities();
 

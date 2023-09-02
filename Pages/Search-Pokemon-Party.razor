@@ -4,12 +4,21 @@
 @inject HttpClient Http
 @inject IJSRuntime JSRuntime
 @using PokemonSearchMoveset.Components
+@inject DataService DataService
 
 
 @page "/search-pokemon-party"
 
+
+
+
+
+
+
 @code {
 
+	[Inject]
+	private DataService dataService { get; set; }
 	// CSV 로드
 
 	private List<PokemonAbilityCSV> AllPokemonAbilities { get; set; } = new List<PokemonAbilityCSV>();
@@ -22,45 +31,22 @@
 	private List<PokemonTypePastCSV> PokemonTypesPast = new List<PokemonTypePastCSV>();
 	private List<TypeNameCSV> TypeNames = new List<TypeNameCSV>();
 
+
+
 	protected override void OnInitialized()
 	{
+
+
 		//Task.Run(async () => await LoadData());
-	}
-
-
-	private bool IsDataLoaded { get; set; } = false;
-
-	private async Task LoadDataOnDemand()
-	{
-		if (!IsDataLoaded)
-		{
-			Console.WriteLine("Loading data..."); // 디버그 메시지 추가
-			await LoadData();
-			if (AllPokemonMoves.Count > 0)
-			{
-				Console.WriteLine($"Loaded {AllPokemonMoves.Count} rows."); // 데이터 로드 성공 확인
-			}
-			else
-			{
-				Console.WriteLine("No data loaded."); // 데이터 로드 실패 확인
-			}
-			IsDataLoaded = true;
-			StateHasChanged();  // UI 갱신
-		}
-	}
-
-	private async Task LoadData()
-	{
-		AllPokemonAbilities = await CsvLoader.LoadPokemonAbilities(Http, "database/pokemon_abilities.csv") ?? new List<PokemonAbilityCSV>();
-		AllPokemonMoves = await CsvLoader.LoadPokemonMoves(Http, "database/pokemon_moves.csv") ?? new List<PokemonMoveCSV>();
-		Pokemons = await CsvLoader.LoadPokemons(http: Http, path: "database/pokemon.csv");
-		PokemonNames = await CsvLoader.LoadPokemonNames(http: Http, path: "database/pokemon_species_names.csv");
-		PokemonForms = await CsvLoader.LoadPokemonForms(http: Http, path: "database/pokemon_forms.csv");
-		PokemonFormNames = await CsvLoader.LoadPokemonFormNames(http: Http, path: "database/pokemon_form_names.csv");
-		TypeNames = await CsvLoader.LoadTypeNames(http: Http, path: "database/type_names.csv");
-		PokemonTypes = await CsvLoader.LoadPokemonTypes(http: Http, path: "database/pokemon_types.csv");
-		PokemonTypesPast = await CsvLoader.LoadPokemonTypesPast(http: Http, path: "database/pokemon_types_past.csv");
-
+		AllPokemonAbilities = dataService.AllPokemonAbilities;
+		AllPokemonMoves = dataService.AllPokemonMoves;
+		Pokemons = dataService.Pokemons;
+		PokemonNames = dataService.PokemonNames;
+		PokemonForms = dataService.PokemonForms;
+		PokemonFormNames = dataService.PokemonFormNames;
+		TypeNames = dataService.TypeNames;
+		PokemonTypes = dataService.PokemonTypes;
+		PokemonTypesPast = dataService.PokemonTypesPast;
 	}
 
 
@@ -82,8 +68,7 @@
 
 
 	private VersionSelect versionSelectComponent = new VersionSelect();
-	private MoveSearch moveSearchComponent = new MoveSearch();
-	private AbilitySearch abilitySearchComponent = new AbilitySearch();
+
 
 	// 데이터 가져오기
 
@@ -95,21 +80,83 @@
 		Console.WriteLine($"Version selected: {SelectedVersionId}"); // 디버그 메시지 추가
 	}
 
-	public List<int> SelectedAbilities { get; set; } = new List<int>();
 
-	private void HandleAbilitySelected(AbilityNameCSV selectedAbility)
+	// Any 리스트에서 선택한 것들
+	public List<int> SelectedAbilities { get; set; } = new List<int>();
+	public List<int> SelectedMoves { get; set; } = new List<int>();
+
+
+	private MoveSearch moveSearchComponent = new MoveSearch();
+	private AbilitySearch abilitySearchComponent = new AbilitySearch();
+	private List<PokemonSlot> PokemonSlots = new List<PokemonSlot> { new PokemonSlot() };
+
+	private void AddPokemonSlot()
 	{
-		if (!SelectedAbilities.Contains(selectedAbility.AbilityId))  // 중복 선택 체크
+		PokemonSlots.Add(new PokemonSlot());
+	}
+
+	private void RemovePokemonSlot()
+	{
+		if (PokemonSlots.Count > 1)
 		{
-			SelectedAbilities.Add(selectedAbility.AbilityId);
-			StateHasChanged();
-		}
-		else
-		{
-			SelectedAbilities.Remove(selectedAbility.AbilityId);
-			StateHasChanged();
+			PokemonSlots.RemoveAt(PokemonSlots.Count - 1);
 		}
 	}
+	// Pokemon 1 ~ 6 용
+	private class PokemonSlot
+	{
+		private AbilitySearch abilitySearchComponent = new AbilitySearch();
+		private MoveSearch moveSearchComponent = new MoveSearch();
+		public List<int> SelectedAbilities { get; set; } = new List<int>();
+		public List<int> SelectedMoves { get; set; } = new List<int>();
+
+		public List<int> AddedMovesFromAny { get; set; } = new List<int>();
+
+		// 슬롯 필터 적용된 포켓몬 리스트
+		public List<int> InitialList { get; set; } = new List<int>();
+		// 각 Any 필터링 생략 여부
+		public List<bool> SkipAnyAbilityFilter { get; set; } = new List<bool>();
+		public List<bool> SkipAnyMoveFilter { get; set; } = new List<bool>();
+		// 필터 적용된 현재 상태 포켓몬 리스트
+		public List<int> CurrentList { get; set; } = new List<int>();
+
+	}
+
+
+
+
+
+
+
+
+	private void HandleAbilitySelected(AbilityNameCSV selectedAbility, int slot)
+	{
+		if (slot == 0)  // Any Pokemon
+		{
+			if (!SelectedAbilities.Contains(selectedAbility.AbilityId))
+			{
+				SelectedAbilities.Add(selectedAbility.AbilityId);
+			}
+			else
+			{
+				SelectedAbilities.Remove(selectedAbility.AbilityId);
+			}
+		}
+		else  // Pokemon 1~6
+		{
+			if (!PokemonSlots[slot - 1].SelectedAbilities.Contains(selectedAbility.AbilityId))
+			{
+				PokemonSlots[slot - 1].SelectedAbilities.Clear();  // 하나만 선택 가능
+				PokemonSlots[slot - 1].SelectedAbilities.Add(selectedAbility.AbilityId);
+			}
+			else
+			{
+				PokemonSlots[slot - 1].SelectedAbilities.Remove(selectedAbility.AbilityId);
+			}
+		}
+		StateHasChanged();
+	}
+
 
 	private void RemoveSelectedAbility(int abilityId)
 	{
@@ -118,21 +165,40 @@
 	}
 
 
-	public List<int> SelectedMoves { get; set; } = new List<int>();
 
-	private void HandleMoveSelected(MoveNameCSV selectedMove)
+	private void HandleMoveSelected(MoveNameCSV selectedMove, int slot)
 	{
-		if (!SelectedMoves.Contains(selectedMove.MoveId))  // 중복 선택 체크
+		if (slot == 0)  // Any Pokemon
 		{
-			SelectedMoves.Add(selectedMove.MoveId);
-			StateHasChanged();
+			if (!SelectedMoves.Contains(selectedMove.MoveId))
+			{
+				if (SelectedMoves.Count < 4)
+				{
+					SelectedMoves.Add(selectedMove.MoveId);
+				}
+			}
+			else
+			{
+				SelectedMoves.Remove(selectedMove.MoveId);
+			}
 		}
-		else
+		else  // Pokemon 1~6
 		{
-			SelectedMoves.Remove(selectedMove.MoveId);
-			StateHasChanged();
+			if (!PokemonSlots[slot - 1].SelectedMoves.Contains(selectedMove.MoveId))
+			{
+				if (PokemonSlots[slot - 1].SelectedMoves.Count < 4)
+				{
+					PokemonSlots[slot - 1].SelectedMoves.Add(selectedMove.MoveId);
+				}
+			}
+			else
+			{
+				PokemonSlots[slot - 1].SelectedMoves.Remove(selectedMove.MoveId);
+			}
 		}
+		StateHasChanged();
 	}
+
 
 	private void RemoveSelectedMove(int moveId)
 	{
@@ -181,8 +247,227 @@
 
 
 
+
+
+
+
+
+
 	private List<PokemonMoveCSV> FilteredPokemonMoves { get; set; } = new List<PokemonMoveCSV>();
 	private List<dynamic> groupedMoves = new List<dynamic>();
+
+
+	private void SearchPokemonParty()
+	{
+		var result = new List<int>();
+
+		// 초기 시작
+		for (int i = 0; i < PokemonSlots.Count; i++)
+		{
+			// 각 슬롯 초기화 후 필터링 적용
+			PokemonSlots[i].InitialList = new List<int>();
+			PokemonSlots[i].CurrentList = PokemonSlots[i].InitialList;
+			PokemonSlots[i].CurrentList = ApplySlotFilter(i);
+
+			// AddedMovesFromAny를 -1로 초기화
+			PokemonSlots[i].AddedMovesFromAny = Enumerable.Repeat(-1, SelectedMoves.Count).ToList();
+
+			PokemonSlots[i].SkipAnyAbilityFilter = new List<bool>(SelectedAbilities.Count);
+			for (int j = 0; j < SelectedAbilities.Count; j++)
+				PokemonSlots[i].SkipAnyAbilityFilter.Add(false);
+
+			PokemonSlots[i].SkipAnyMoveFilter = new List<bool>(SelectedMoves.Count);
+			for (int j = 0; j < SelectedMoves.Count; j++)
+				PokemonSlots[i].SkipAnyMoveFilter.Add(false);
+		}
+
+		// Any 조건 검색
+		SearchWithAnyConditions();
+
+		// 디버그용 출력
+		for (int i = 0; i < PokemonSlots.Count; i++)
+		{
+			Console.WriteLine($"Slot {i + 1}:");
+			foreach (var pokemonId in PokemonSlots[i].CurrentList)
+			{
+				Console.WriteLine($" - Pokemon ID: {pokemonId}");
+			}
+		}
+	}
+
+
+
+
+
+	// 초기 세팅
+	private List<int> ApplySlotFilter(int slot)
+	{
+		// 버전으로 필터링
+		var filteredList = AllPokemonMoves.Where(pm => pm.VersionGroupId == SelectedVersionId).ToList();
+
+		// 슬롯별 선택된 특성과 기술로 필터링
+		// 예: SlotAbilities[slot], SlotMoves[slot]
+		if (PokemonSlots[slot].SelectedAbilities.Count > 0)
+		{
+			var pokemonsWithSelectedAbilities = AllPokemonAbilities.Where(pa => PokemonSlots[slot].SelectedAbilities.Contains(pa.AbilityId))
+				.Select(pa => pa.PokemonId).Distinct().ToList();
+
+			filteredList = filteredList.Where(pm => pokemonsWithSelectedAbilities.Contains(pm.PokemonId)).ToList();
+		}
+
+		filteredList = filteredList.Where(pm =>
+			PokemonSlots[slot].SelectedMoves.Contains(pm.MoveId)
+		).ToList();
+
+		// 포켓몬 ID만 반환
+		return filteredList.Select(pm => pm.PokemonId).Distinct().ToList();
+	}
+
+
+
+
+
+	private bool ApplyAnyAbilityToSlot(int abilityId, int slot)
+	{
+		// 슬롯에 대한 포켓몬 ID 목록 필터링
+		var currentPokemonIds = PokemonSlots[slot].CurrentList;
+
+		// 현재 슬롯의 포켓몬 ID 목록과 일치하며 주어진 abilityId 특성을 가진 포켓몬 목록 검색
+		var pokemonsWithGivenAbility = AllPokemonAbilities
+			.Where(pa => currentPokemonIds.Contains(pa.PokemonId) && pa.AbilityId == abilityId)
+			.Select(pa => pa.PokemonId)
+			.Distinct()
+			.ToList();
+
+		if (pokemonsWithGivenAbility.Count > 0)
+		{
+			// 조건이 충족되면 CurrentList를 갱신하고 true 반환
+			PokemonSlots[slot].CurrentList = pokemonsWithGivenAbility;
+			return true;
+		}
+		else
+		{
+			// 조건이 충족되지 않으면 false 반환
+			return false;
+		}
+	}
+
+
+
+
+	private bool ApplyAnyMoveToSlot(int abilityId, int slot)
+	{
+		// 슬롯에 대한 포켓몬 ID 목록 필터링
+		var currentPokemonIds = PokemonSlots[slot].CurrentList;
+
+		// 현재 슬롯의 포켓몬 ID 목록과 일치하며 주어진 abilityId 특성을 가진 포켓몬 목록 검색
+		var pokemonsWithGivenMove = AllPokemonMoves
+			.Where(pm => currentPokemonIds.Contains(pm.PokemonId) && pm.MoveId == abilityId)
+			.Select(pm => pm.PokemonId)
+			.Distinct()
+			.ToList();
+
+		if (pokemonsWithGivenMove.Count > 0)
+		{
+			// 조건이 충족되면 CurrentList를 갱신하고 true 반환
+			PokemonSlots[slot].CurrentList = pokemonsWithGivenMove;
+			return true;
+		}
+		else
+		{
+			// 조건이 충족되지 않으면 false 반환
+			return false;
+		}
+	}
+
+
+	private bool SearchWithAnyConditions()
+	{
+		for (int i = 0; i < SelectedAbilities.Count; i++)
+		{
+			if (!SearchConditionForSlot(SelectedAbilities[i], ApplyAnyAbilityToSlot, i, true))
+			{
+				ResetAllSlotsToInitial(i, true);
+				return false;
+			}
+		}
+
+		for (int i = 0; i < SelectedMoves.Count; i++)
+		{
+			if (!SearchConditionForSlot(SelectedMoves[i], ApplyAnyMoveToSlot, i, false))
+			{
+				ResetAllSlotsToInitial(i, false);
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	private bool SearchConditionForSlot(int conditionId, Func<int, int, bool> applyConditionFunction, int filterIndex, bool isAbility)
+	{
+		for (int slot = 0; slot < PokemonSlots.Count; slot++)
+		{
+			if ((isAbility && filterIndex < PokemonSlots[slot].SkipAnyAbilityFilter.Count && PokemonSlots[slot].SkipAnyAbilityFilter[filterIndex]) ||
+				(!isAbility && filterIndex < PokemonSlots[slot].SkipAnyMoveFilter.Count && PokemonSlots[slot].SkipAnyMoveFilter[filterIndex]))
+
+				continue;  // 해당 슬롯은 건너뜁니다.
+
+			if (applyConditionFunction(conditionId, slot))
+			{
+				if (!isAbility)
+				{
+					PokemonSlots[slot].AddedMovesFromAny.Add(conditionId);  // 이 부분 추가
+					return true;
+				}
+				else return true;
+			}
+			else if (slot == PokemonSlots.Count - 1) // 마지막 슬롯에 도달했을 때
+			{
+				if (isAbility)
+				{
+					PokemonSlots[slot].SkipAnyAbilityFilter[filterIndex] = true;
+				}
+				else
+				{
+					PokemonSlots[slot].SkipAnyMoveFilter[filterIndex] = true;
+				}
+				ResetAllSlotsToInitial(filterIndex, isAbility);
+			}
+		}
+		return false;
+	}
+
+
+	private void ResetAllSlotsToInitial(int startingFilter, bool isAbility)
+	{
+		for (int i = 0; i < PokemonSlots.Count; i++)
+		{
+			// 슬롯을 초기 상태로 되돌림
+			PokemonSlots[i].CurrentList = new List<int>(PokemonSlots[i].InitialList);
+
+			// SkipAnyAbilityFilter와 SkipAnyMoveFilter를 초기화
+			if (isAbility)
+			{
+				for (int j = startingFilter + 1; j < PokemonSlots[i].SkipAnyAbilityFilter.Count; j++)
+				{
+					PokemonSlots[i].SkipAnyAbilityFilter[j] = false;
+				}
+			}
+			else
+			{
+				for (int j = startingFilter + 1; j < PokemonSlots[i].SkipAnyMoveFilter.Count; j++)
+				{
+					PokemonSlots[i].SkipAnyMoveFilter[j] = false;
+				}
+			}
+
+			// 슬롯에 대한 필터를 다시 적용
+			ApplySlotFilter(i);
+		}
+	}
+
+
 
 
 	private void FilterPokemonMoves()
@@ -216,10 +501,10 @@
 
 
 
-	private async Task FindWildPokemon()
+	private async Task FindPokemonParty()
 	{
 		// CSV 데이터가 로드되지 않았다면 로드합니다.
-		await LoadDataOnDemand();
+		//await LoadDataOnDemand();
 
 		// 포켓몬 데이터 필터링
 		FilterPokemonMoves();
@@ -305,8 +590,16 @@
 
 	public string GetAbilityNameById(int abilityId)
 	{
-		var matchingAbilityName = abilitySearchComponent.AbilityNames.FirstOrDefault(mn => mn.AbilityId == abilityId && mn.LocalLanguageId == CurrentLanguageId);
-		return matchingAbilityName?.Name ?? $"Ability {abilityId}";
+		if (abilityId != -1)
+		{
+			var matchingAbilityName = abilitySearchComponent.AbilityNames.FirstOrDefault(mn => mn.AbilityId == abilityId && mn.LocalLanguageId == CurrentLanguageId);
+			return matchingAbilityName?.Name ?? $"Ability {abilityId}";
+
+		}
+		else
+		{
+			return "";
+		}
 
 
 
@@ -371,10 +664,6 @@
 	}
 
 
-
-
-
-
 }
 
 
@@ -384,145 +673,189 @@
 		<!-- mb-3 추가 -->
 		<VersionSelect CurrentLanguageId="@CurrentLanguageId" OnVersionSelected="HandleVersionChecked" @ref="versionSelectComponent" />
 	</div>
-	<div class="pokemon-team-filter">
 
-		<div class="filter-section">
-			<h5>Any Pokemon</h5>
-			<div class="filter-row">
-				<AbilitySearch CurrentLanguageId="@CurrentLanguageId" OnAbilitySelected="HandleAbilitySelected" />
-				<MoveSearch CurrentLanguageId="@CurrentLanguageId" OnMoveSelected="HandleMoveSelected" />
-			</div>
-		</div>
+	@if (DataService.IsDataLoaded)
+	{
+		<div>
+			<h3>Any Pokemon</h3>
+			<div class ="row">
+				<div class="col-md-2 mb-3">
 
-		@for (int i = 0; i < numberOfPokemonSlots; i++)
-		{
-			<!-- 포켓몬 슬롯 섹션 -->
-			<div class="filter-section">
-				<h5>Pokemon @(i + 1)</h5>
-				<div class="filter-row">
-					<AbilitySearch CurrentLanguageId="@CurrentLanguageId" OnAbilitySelected="HandleAbilitySelected" />
-					<MoveSearch CurrentLanguageId="@CurrentLanguageId" OnMoveSelected="HandleMoveSelected" />
+					<!-- 특성 선택 (여러 개 선택 가능) -->
+					<AbilitySearch CurrentLanguageId="@CurrentLanguageId" @ref="abilitySearchComponent" OnAbilitySelected="(ability) => HandleAbilitySelected(ability, 0)" />
 				</div>
+				<div class="col-md-2 mb-3">
+					<h5>Selected Abilities:</h5>
+					<div class="gap"></div>
+					<!-- 선택한 능력 표시 -->
+					<div class="bordered-box-container">
+						@foreach (var abilityId in SelectedAbilities)
+						{
+							<div @onclick="() => RemoveSelectedAbility(abilityId)" class="selectable-text">
+								@GetAbilityNameById(abilityId) (ID: @abilityId)
+							</div>
+						}
+					</div>
+				</div>
+				<div class="col-md-2 mb-3">
+					<!-- 기술 선택 -->
+					<MoveSearch CurrentLanguageId="@CurrentLanguageId" @ref="moveSearchComponent" OnMoveSelected="(move) => HandleMoveSelected(move, 0)" />
+				</div>
+				<div class="col-md-2 mb-3">
+					<h5>Selected Moves:</h5>
+					<div class="gap"></div>
+					<div class="bordered-box-container">
+						@foreach (var moveId in SelectedMoves)
+						{
+							<div @onclick="() => RemoveSelectedMove(moveId)" class="selectable-text">
+								@GetMoveNameById(moveId) (ID: @moveId)
+							</div>
+						}
+					</div>
+				</div>
+
 			</div>
-		}
 
-		@if (numberOfPokemonSlots < 6)
-		{
-			<button @onclick="AddPokemonSlot">+ Add Pokemon</button>
-		}
-
-		<style>
-			.pokemon-team-filter {
-				margin-top: 20px;
-			}
-
-			.filter-section {
-				padding: 10px;
-				border: 1px solid #ccc;
-				margin-bottom: 10px;
-				border-radius: 5px;
-			}
-
-			.filter-row {
-				display: flex; /* flexbox를 사용하여 가로로 배치 */
-				gap: 10px; /* 컴포넌트 간 간격 */
-			}
-		</style>
-
-		@code {
-			private int numberOfPokemonSlots = 1;
-
-			private void AddPokemonSlot()
+			@for (var i = 0; i < PokemonSlots.Count; i++)
 			{
-				if (numberOfPokemonSlots < 6)
-				{
-					numberOfPokemonSlots++;
-				}
+				var slotNumber = i + 1; // 1-based slot number
+				<div class="pokemon-slot">
+					<h4>@($"Pokemon {slotNumber}")</h4>
+					<div class="row">
+						<div class="col-md-2 mb-3">
+
+							<!-- 특성 선택 (여러 개 선택 가능) -->
+							<AbilitySearch CurrentLanguageId="@CurrentLanguageId" @ref="abilitySearchComponent" OnAbilitySelected="(ability) => HandleAbilitySelected(ability, slotNumber)" />
+						</div>
+						<div class="col-md-2 mb-3">
+							<h5>Selected Abilities:</h5>
+							<div class="gap"></div>
+							<!-- 선택한 능력 표시 -->
+							<div class="bordered-box-container">
+								@foreach (var abilityId in PokemonSlots[i].SelectedAbilities)
+								{
+									<div @onclick="() => RemoveSelectedAbility(abilityId)" class="selectable-text">
+										@GetAbilityNameById(abilityId) (ID: @abilityId)
+									</div>
+								}
+							</div>
+						</div>
+						<div class="col-md-2 mb-3">
+							<!-- 기술 선택 -->
+							<MoveSearch CurrentLanguageId="@CurrentLanguageId" @ref="moveSearchComponent" OnMoveSelected="(move) => HandleMoveSelected(move, slotNumber)" />
+						</div>
+						<div class="col-md-2 mb-3">
+							<h5>Selected Moves:</h5>
+							<div class="gap"></div>
+							<div class="bordered-box-container">
+								@foreach (var moveId in PokemonSlots[i].SelectedMoves)
+								{
+									<div @onclick="() => RemoveSelectedMove(moveId)" class="selectable-text">
+										@GetMoveNameById(moveId) (ID: @moveId)
+									</div>
+								}
+							</div>
+						</div>
+
+					</div>
+
+@* 					<!-- 특성 선택 (한 개만 선택 가능) -->
+					<AbilitySearch CurrentLanguageId="@CurrentLanguageId" OnAbilitySelected="(ability) => HandleAbilitySelected(ability, slotNumber)" />
+
+					<!-- 선택한 능력 표시 -->
+					<div>
+						@foreach (var abilityId in PokemonSlots[i].SelectedAbilities)
+						{
+							<span class="selected-item">@GetAbilityNameById(abilityId)</span>
+						}
+					</div>
+
+					<!-- 기술 선택 -->
+					<MoveSearch CurrentLanguageId="@CurrentLanguageId" OnMoveSelected="(move) => HandleMoveSelected(move, slotNumber)" />
+
+					<!-- 선택한 기술 표시 -->
+					<div>
+						@foreach (var moveId in PokemonSlots[i].SelectedMoves)
+						{
+							<span class="selected-item">@GetMoveNameById(moveId)</span>
+						}
+					</div> *@
+				</div>
 			}
-		}
-	</div>
+
+			<button @onclick="AddPokemonSlot">+</button>
+			@if (PokemonSlots.Count > 1)
+			{
+				<button @onclick="RemovePokemonSlot">-</button>
+			}
+		</div>
+	}
+	else
+	{
+		<p>Loading data...</p>
+	}
+
+
 </div>
-<button @onclick="FindWildPokemon" class="btn-find-pokemon">Find A Pokemon</button> <!-- class 추가 -->
-@if (FilteredPokemonMoves.Any())
+<button @onclick="SearchPokemonParty" class="btn-find-pokemon">Search Pokemon Party</button> <!-- class 추가 -->
+@if (PokemonSlots.Any())
 {
 	<table class="table">
 		<thead>
 			<tr>
-				<th @onclick="() => SortData(SortColumn.SpeciesId)">
-					Pokemon No.
-					@if (CurrentSortColumn == SortColumn.SpeciesId)
-					{
-						<span class="sort-arrow">@((IsAscendingSort) ? "⬆️" : "⬇️")</span>
-					}
-				</th>
-				<th @onclick="() => SortData(SortColumn.Name)">
-					Pokemon Name
-					@if (CurrentSortColumn == SortColumn.Name)
-					{
-						<span class="sort-arrow">@((IsAscendingSort) ? "⬆️" : "⬇️")</span>
-					}
-				</th>
+				<th>Slot</th>
+				<th>Pokemon No.</th>
+				<th>Pokemon Name</th>
 				<th>Type 1</th>
 				<th>Type 2</th>
-				<th>Ability 1</th>  <!-- 새로운 열 추가 -->
-				<th>Ability 2</th>  <!-- 새로운 열 추가 -->
-				<th>Hidden Abilitiy</th>  <!-- 새로운 열 추가 -->
-
-				<th @onclick="() => SortData(SortColumn.NumberOfMoves)">
-					Number of Moves
-					@if (CurrentSortColumn == SortColumn.NumberOfMoves)
-					{
-						<span class="sort-arrow">@((IsAscendingSort) ? "⬆️" : "⬇️")</span>
-					}
-				</th>
-				<th>Move Name</th>
-				<th>Method</th>
-				<th>Level</th>
+				<th>Ability 1</th>
+				<th>Ability 2</th>
+				<th>Hidden Ability</th>
+				<th>Moves</th>
 			</tr>
 		</thead>
 
-
-
 		<tbody>
-			@foreach (var group in groupedMoves)
+			@for (int i = 0; i < PokemonSlots.Count; i++)
 			{
-				bool firstRowForPokemon = true;
-				foreach (var move in group.Moves)
+				var slot = PokemonSlots[i];
+				foreach (var pokemonId in slot.CurrentList)
 				{
-
+					var types = GetPokemonTypesById(pokemonId);
+					var abilities = GetAbilityNamesByPokemonId(pokemonId);
 					<tr>
-						@if (firstRowForPokemon)
-						{
-							var types = GetPokemonTypesById(group.PokemonId);
-							var abilities = GetAbilityNamesByPokemonId(group.PokemonId);
-							<td rowspan="@group.Moves.Count">@GetSpeciesIdById(group.PokemonId)</td>
-							<td rowspan="@group.Moves.Count">@GetPokemonNameById(group.PokemonId)</td>
-							<td rowspan="@group.Moves.Count">@types.Item1</td>
-							<td rowspan="@group.Moves.Count">@types.Item2</td>
-
-							<td rowspan="@group.Moves.Count">@abilities.Item1</td>
-							<td rowspan="@group.Moves.Count">@abilities.Item2</td>
-							<td rowspan="@group.Moves.Count">@abilities.Item3</td>
-							<td rowspan="@group.Moves.Count">@group.UniqueMoveCount</td>
-							firstRowForPokemon = false;
-						}
-						<td>@GetMoveNameById(move.MoveId)</td>
-						<td>@MoveMethods[move.PokemonMoveMethodId]</td>
+						<td>Slot @(i + 1)</td>
+						<td>@GetSpeciesIdById(pokemonId)</td>
+						<td>@GetPokemonNameById(pokemonId)</td>
+						<td>@types.Item1</td>
+						<td>@types.Item2</td>
+						<td>@abilities.Item1</td>
+						<td>@abilities.Item2</td>
+						<td>@abilities.Item3</td>
 						<td>
-							@if (move.PokemonMoveMethodId == 1)
+							@foreach (var moveId in slot.SelectedMoves)
 							{
-								@(move.Level == 0 ? "Evo." : move.Level.ToString())
+								<span>@GetMoveNameById(moveId)</span>
+								<br>
+							}
+							@foreach (var moveId in slot.AddedMovesFromAny)
+							{
+								if (moveId != -1)
+								{
+									<span>@GetMoveNameById(moveId)</span>
+									<br>
+								}
 							}
 						</td>
 					</tr>
 				}
 			}
 		</tbody>
-
-
-
 	</table>
 }
+
+
+
 else
 {
 	<div class="no-results">
