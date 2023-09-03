@@ -172,7 +172,7 @@
 		{
 			if (!SelectedMoves.Contains(selectedMove.MoveId))
 			{
-				if (SelectedMoves.Count < 4)
+				if (/*SelectedMoves.Count < 4*/1 > 0)
 				{
 					SelectedMoves.Add(selectedMove.MoveId);
 				}
@@ -314,11 +314,12 @@
 
 			filteredList = filteredList.Where(pm => pokemonsWithSelectedAbilities.Contains(pm.PokemonId)).ToList();
 		}
-
-		filteredList = filteredList.Where(pm =>
-			PokemonSlots[slot].SelectedMoves.Contains(pm.MoveId)
-		).ToList();
-
+		if (PokemonSlots[slot].SelectedMoves.Count > 0)
+		{
+			filteredList = filteredList.Where(pm =>
+				PokemonSlots[slot].SelectedMoves.Contains(pm.MoveId)
+			).ToList();
+		}
 		// 포켓몬 ID만 반환
 		return filteredList.Select(pm => pm.PokemonId).Distinct().ToList();
 	}
@@ -678,7 +679,7 @@
 	{
 		<div>
 			<h3>Any Pokemon</h3>
-			<div class ="row">
+			<div class="row">
 				<div class="col-md-2 mb-3">
 
 					<!-- 특성 선택 (여러 개 선택 가능) -->
@@ -759,27 +760,27 @@
 
 					</div>
 
-@* 					<!-- 특성 선택 (한 개만 선택 가능) -->
-					<AbilitySearch CurrentLanguageId="@CurrentLanguageId" OnAbilitySelected="(ability) => HandleAbilitySelected(ability, slotNumber)" />
+					@* 					<!-- 특성 선택 (한 개만 선택 가능) -->
+			<AbilitySearch CurrentLanguageId="@CurrentLanguageId" OnAbilitySelected="(ability) => HandleAbilitySelected(ability, slotNumber)" />
 
-					<!-- 선택한 능력 표시 -->
-					<div>
-						@foreach (var abilityId in PokemonSlots[i].SelectedAbilities)
-						{
-							<span class="selected-item">@GetAbilityNameById(abilityId)</span>
-						}
-					</div>
+			<!-- 선택한 능력 표시 -->
+			<div>
+			@foreach (var abilityId in PokemonSlots[i].SelectedAbilities)
+			{
+			<span class="selected-item">@GetAbilityNameById(abilityId)</span>
+			}
+			</div>
 
-					<!-- 기술 선택 -->
-					<MoveSearch CurrentLanguageId="@CurrentLanguageId" OnMoveSelected="(move) => HandleMoveSelected(move, slotNumber)" />
+			<!-- 기술 선택 -->
+			<MoveSearch CurrentLanguageId="@CurrentLanguageId" OnMoveSelected="(move) => HandleMoveSelected(move, slotNumber)" />
 
-					<!-- 선택한 기술 표시 -->
-					<div>
-						@foreach (var moveId in PokemonSlots[i].SelectedMoves)
-						{
-							<span class="selected-item">@GetMoveNameById(moveId)</span>
-						}
-					</div> *@
+			<!-- 선택한 기술 표시 -->
+			<div>
+			@foreach (var moveId in PokemonSlots[i].SelectedMoves)
+			{
+			<span class="selected-item">@GetMoveNameById(moveId)</span>
+			}
+			</div> *@
 				</div>
 			}
 
@@ -800,6 +801,12 @@
 <button @onclick="SearchPokemonParty" class="btn-find-pokemon">Search Pokemon Party</button> <!-- class 추가 -->
 @if (PokemonSlots.Any())
 {
+	int totalPokemonCount = AllPokemonMoves
+						.Where(pm => pm.VersionGroupId == SelectedVersionId)
+						.Select(pm => pm.PokemonId)
+						.Distinct()
+						.Count();
+
 	<table class="table">
 		<thead>
 			<tr>
@@ -819,41 +826,58 @@
 			@for (int i = 0; i < PokemonSlots.Count; i++)
 			{
 				var slot = PokemonSlots[i];
-				foreach (var pokemonId in slot.CurrentList)
+				bool isFirstRowForSlot = true;
+
+				if (slot.CurrentList.Count == totalPokemonCount)
 				{
-					var types = GetPokemonTypesById(pokemonId);
-					var abilities = GetAbilityNamesByPokemonId(pokemonId);
 					<tr>
 						<td>Slot @(i + 1)</td>
-						<td>@GetSpeciesIdById(pokemonId)</td>
-						<td>@GetPokemonNameById(pokemonId)</td>
-						<td>@types.Item1</td>
-						<td>@types.Item2</td>
-						<td>@abilities.Item1</td>
-						<td>@abilities.Item2</td>
-						<td>@abilities.Item3</td>
-						<td>
-							@foreach (var moveId in slot.SelectedMoves)
+						<td></td>
+						<td>All Pokemon</td>
+						<td colspan="6"></td> <!-- 나머지 열들을 비웁니다 -->
+					</tr>
+				}
+				else
+				{
+					foreach (var pokemonId in slot.CurrentList)
+					{
+						var types = GetPokemonTypesById(pokemonId);
+						var abilities = GetAbilityNamesByPokemonId(pokemonId);
+						<tr>
+							@if (isFirstRowForSlot)
 							{
-								<span>@GetMoveNameById(moveId)</span>
-								<br>
+								<td rowspan="@slot.CurrentList.Count">Slot @(i + 1)</td>
+								isFirstRowForSlot = false;
 							}
-							@foreach (var moveId in slot.AddedMovesFromAny)
-							{
-								if (moveId != -1)
+							<td>@GetSpeciesIdById(pokemonId)</td>
+							<td>@GetPokemonNameById(pokemonId)</td>
+							<td>@types.Item1</td>
+							<td>@types.Item2</td>
+							<td>@abilities.Item1</td>
+							<td>@abilities.Item2</td>
+							<td>@abilities.Item3</td>
+							<td>
+								@foreach (var moveId in slot.SelectedMoves)
 								{
 									<span>@GetMoveNameById(moveId)</span>
 									<br>
 								}
-							}
-						</td>
-					</tr>
+								@foreach (var moveId in slot.AddedMovesFromAny)
+								{
+									if (moveId != -1)
+									{
+										<span>@GetMoveNameById(moveId)</span>
+										<br>
+									}
+								}
+							</td>
+						</tr>
+					}
 				}
 			}
 		</tbody>
 	</table>
 }
-
 
 
 else
