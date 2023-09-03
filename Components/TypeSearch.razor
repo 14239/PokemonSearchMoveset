@@ -1,0 +1,110 @@
+﻿@using PokemonSearchMoveset.Models
+@using PokemonSearchMoveset.Services
+@using Microsoft.JSInterop
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@inject DataService DataService
+
+
+@code {
+    [Inject]
+    private DataService dataService { get; set; }
+
+    [Parameter] public EventCallback<TypeNameCSV> OnTypeSelected { get; set; }
+
+    [Parameter] public int CurrentLanguageId { get; set; }
+
+    public List<TypeNameCSV> TypeNames { get; set; } = new List<TypeNameCSV>();
+    public List<TypeNameCSV> MatchedTypes { get; set; } = new List<TypeNameCSV>();
+    //public List<TypeNameCSV> AddedTypes { get; set; } = new List<TypeNameCSV>();
+
+    private string _searchTerm = string.Empty;
+    public string SearchTerm
+    {
+        get => _searchTerm;
+        set
+        {
+            _searchTerm = value;
+            SearchTypes();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Console.WriteLine("특성 데이터 가져오기");
+        TypeNames = dataService.TypeNames;
+        SearchTypes();
+
+    }
+
+
+    public void SearchTypes()
+    {
+        if (string.IsNullOrEmpty(SearchTerm))
+        {
+            MatchedTypes = TypeNames.Where(mt => mt.LocalLanguageId == CurrentLanguageId).OrderBy(mt => mt.TypeId).ToList();
+            return;
+        }
+        MatchedTypes = TypeNames.Where(tn => tn.Name.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) && tn.LocalLanguageId == CurrentLanguageId).ToList();
+    }
+
+    public MarkupString HighlightMatch(string typeName)
+    {
+        if (string.IsNullOrEmpty(SearchTerm))
+        {
+            return new MarkupString(typeName);
+        }
+
+        var highlighted = typeName.Replace(SearchTerm, $"<strong>{SearchTerm}</strong>", StringComparison.OrdinalIgnoreCase);
+        return new MarkupString(highlighted);
+    }
+
+    public async void AddType(TypeNameCSV selectedType)
+    {
+        Console.WriteLine($"Type selected: {selectedType.Name}");
+        await OnTypeSelected.InvokeAsync(selectedType);
+    }
+
+
+
+
+    private string previousSearchTerm = string.Empty;
+
+    private int previousLanguageId;
+
+    protected override Task OnParametersSetAsync()
+    {
+        if (CurrentLanguageId != previousLanguageId)
+        {
+            previousLanguageId = CurrentLanguageId;
+            SearchTypes(); // 검색어가 변경될 때마다 검색 메서드를 호출합니다.
+            // await OnLanguageChanged.InvokeAsync(CurrentLanguageId); // 언어가 바뀌면 이벤트를 트리거합니다.
+        }
+
+
+        if (SearchTerm != previousSearchTerm)
+        {
+            previousSearchTerm = SearchTerm;
+            SearchTypes(); // 검색어가 변경될 때마다 검색 메서드를 호출합니다.
+        }
+
+        return Task.CompletedTask; // 비동기 메서드이므로 완료된 Task를 반환합니다.
+
+    }
+
+}
+
+
+    
+        <!-- 검색과 검색 결과 -->
+        <h5>Search for a Type:</h5>
+        <input @bind="SearchTerm" @bind:event="oninput" type="text" placeholder="Enter type name..." />
+        <div class="bordered-box-container" style="max-height: 300px; overflow-y: auto;">
+            @foreach (var type in MatchedTypes)
+            {
+                <div @onclick="() => AddType(type)" class="selectable-text">
+            @HighlightMatch(type.Name)
+                </div>
+            }
+
+        </div>
