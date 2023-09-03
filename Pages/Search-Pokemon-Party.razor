@@ -887,7 +887,11 @@
 			</div>
 
 		</div>
-
+		<button @onclick="AddPokemonSlot">+</button>
+		@if (PokemonSlots.Count > 1)
+		{
+			<button @onclick="RemovePokemonSlot">-</button>
+		}
 		@for (var i = 0; i < PokemonSlots.Count; i++)
 		{
 			var slotNumber = i + 1; // 1-based slot number
@@ -952,11 +956,7 @@
 			</div>
 		}
 
-		<button @onclick="AddPokemonSlot">+</button>
-		@if (PokemonSlots.Count > 1)
-		{
-			<button @onclick="RemovePokemonSlot">-</button>
-		}
+
 	</div>
 
 
