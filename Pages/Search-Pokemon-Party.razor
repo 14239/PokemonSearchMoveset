@@ -114,6 +114,9 @@
 		public List<int> SelectedAbilities { get; set; } = new List<int>();
 		public List<int> SelectedMoves { get; set; } = new List<int>();
 
+		// 루브도 포함 여부를 확인하는 속성
+		public bool CanIncludeSmeargle { get; set; } = false;
+
 		public List<int> AddedMovesFromAny { get; set; } = new List<int>();
 
 		// 슬롯 필터 적용된 포켓몬 리스트
@@ -124,7 +127,7 @@
 		public List<bool> SkipAnyMoveFilter { get; set; } = new List<bool>();
 		// 필터 적용된 현재 상태 포켓몬 리스트
 		public List<int> CurrentList { get; set; } = new List<int>();
-
+		public List<PokemonMoveCSV> FilteredList { get; set; } = new List<PokemonMoveCSV>();
 
 		public PokemonSlot DeepCopy()
 		{
@@ -526,14 +529,15 @@
 
 
 
-	private bool ApplyAnyMoveToSlot(int abilityId, int slot)
+	private bool ApplyAnyMoveToSlot(int moveId, int slot)
 	{
+		
 		// 슬롯에 대한 포켓몬 ID 목록 필터링
 		var currentPokemonIds = PokemonSlots[slot].CurrentList;
 
-		// 현재 슬롯의 포켓몬 ID 목록과 일치하며 주어진 abilityId 특성을 가진 포켓몬 목록 검색
+		// 현재 슬롯의 포켓몬 ID 목록과 일치하며 주어진 moveId를 가진 포켓몬 목록 검색
 		var pokemonsWithGivenMove = AllPokemonMoves
-			.Where(pm => currentPokemonIds.Contains(pm.PokemonId) && pm.MoveId == abilityId)
+		.Where(pm => currentPokemonIds.Contains(pm.PokemonId) && (pm.MoveId == moveId || pm.PokemonId == 235) && pm.VersionGroupId == SelectedVersionId) // 루브도의 ID가 235라고 가정
 			.Select(pm => pm.PokemonId)
 			.Distinct()
 			.ToList();
@@ -607,8 +611,10 @@
 				case FilterType.Move:
 					shouldSkip = filterIndex < PokemonSlots[slot].SkipAnyMoveFilter.Count && PokemonSlots[slot].SkipAnyMoveFilter[filterIndex];
 					// 여기서 기술 슬롯이 4개로 찼는지 확인합니다.
-					if ((PokemonSlots[slot].SelectedMoves.Count + PokemonSlots[slot].AddedMovesFromAny.Count) >= 4)
+					int addedMoveCount = PokemonSlots[slot].AddedMovesFromAny.Count(move => move != -1);
+					if ((addedMoveCount + PokemonSlots[slot].SelectedMoves.Count) >= 4)
 						shouldSkip = true;
+
 					
 					break;
 			}
