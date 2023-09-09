@@ -606,6 +606,10 @@
 					break;
 				case FilterType.Move:
 					shouldSkip = filterIndex < PokemonSlots[slot].SkipAnyMoveFilter.Count && PokemonSlots[slot].SkipAnyMoveFilter[filterIndex];
+					// 여기서 기술 슬롯이 4개로 찼는지 확인합니다.
+					if ((PokemonSlots[slot].SelectedMoves.Count + PokemonSlots[slot].AddedMovesFromAny.Count) >= 4)
+						shouldSkip = true;
+					
 					break;
 			}
 
@@ -884,7 +888,11 @@
 			</div>
 			<div class="col-md-2 mb-3">
 				<!-- 기술 선택 -->
-				<MoveSearch CurrentLanguageId="@CurrentLanguageId" @ref="moveSearchComponent" OnMoveSelected="(move) => HandleMoveSelected(move, 0)" />
+				<MoveSearch
+					CurrentLanguageId="@CurrentLanguageId" 
+					MoveNames="@MoveNames"
+					@ref="moveSearchComponent" 
+					OnMoveSelected="(move) => HandleMoveSelected(move, 0)" />
 			</div>
 			<div class="col-md-2 mb-3">
 				<h5>Selected Moves:</h5>
@@ -950,7 +958,11 @@
 					</div>
 					<div class="col-md-2 mb-3">
 						<!-- 기술 선택 -->
-						<MoveSearch CurrentLanguageId="@CurrentLanguageId" @ref="moveSearchComponent" OnMoveSelected="(move) => HandleMoveSelected(move, slotNumber)" />
+						<MoveSearch
+							CurrentLanguageId="@CurrentLanguageId"
+							MoveNames="@MoveNames"
+							OnMoveSelected="(move) => HandleMoveSelected(move, slotNumber)"
+						@ref="moveSearchComponent" />
 					</div>
 					<div class="col-md-2 mb-3">
 						<h5>Selected Moves:</h5>
