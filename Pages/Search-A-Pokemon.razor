@@ -24,6 +24,7 @@
 	private List<PokemonTypeCSV> PokemonTypes = new List<PokemonTypeCSV>();
 	private List<PokemonTypePastCSV> PokemonTypesPast = new List<PokemonTypePastCSV>();
 	private List<TypeNameCSV> TypeNames = new List<TypeNameCSV>();
+	public List<MoveNameCSV> MoveNames { get; set; } = new List<MoveNameCSV>();
 
 
 
@@ -41,6 +42,7 @@
 		TypeNames = dataService.TypeNames;
 		PokemonTypes = dataService.PokemonTypes;
 		PokemonTypesPast = dataService.PokemonTypesPast;
+		MoveNames = dataService.MoveNames;
 	}
 
 
@@ -359,6 +361,20 @@
 	}
 
 
+	// 클릭 시 정보 표시 용도
+	private PokemonInfoLayer PokemonInfoLayerRef;
+
+	private void OnPokemonNameClicked(int pokemonId)
+	{
+		var types = GetPokemonTypesById(pokemonId);
+		var abilities = GetAbilityNamesByPokemonId(pokemonId);
+
+		PokemonInfoLayerRef.Show(pokemonId, GetPokemonNameById(pokemonId), types.Item1, types.Item2, abilities.Item1, abilities.Item2, abilities.Item3);
+	}
+
+
+
+
 }
 
 
@@ -387,7 +403,12 @@
 	</div>
 	<div class="col-md-4 mb-3">
 		<!-- mb-3 추가 -->
-		<MoveSearch CurrentLanguageId="@CurrentLanguageId" @ref="moveSearchComponent" OnMoveSelected="HandleMoveSelected" />
+		<MoveSearch
+			OnMoveSelected="HandleMoveSelected"
+			CurrentLanguageId="@CurrentLanguageId"
+			MoveNames="@MoveNames"
+			@ref="moveSearchComponent"
+			/>
 	</div>
 	<div class="col-md-4">
 		<h5>Selected Moves:</h5>
@@ -469,7 +490,7 @@
 							var types = GetPokemonTypesById(group.PokemonId);
 							var abilities = GetAbilityNamesByPokemonId(group.PokemonId);
 							<td rowspan="@group.Moves.Count">@GetSpeciesIdById(group.PokemonId)</td>
-							<td rowspan="@group.Moves.Count">@GetPokemonNameById(group.PokemonId)</td>
+							<td rowspan="@group.Moves.Count" class="clickable-pokemon-name" @onclick="@(e => { OnPokemonNameClicked(group.PokemonId); })">@GetPokemonNameById(group.PokemonId)</td>
 							<td rowspan="@group.Moves.Count">@types.Item1</td>
 							<td rowspan="@group.Moves.Count">@types.Item2</td>
 
@@ -503,21 +524,14 @@ else
 	</div>
 }
 
-<style>
-	.no-results {
-		padding: 20px;
-		text-align: center;
-		font-size: 18px;
-		color: #999;
-		background-color: #f8f8f8;
-		border: 1px solid #e0e0e0;
-		margin-top: 20px;
-		border-radius: 5px;
-	}
-</style>
+
+<PokemonInfoLayer CurrentLanguageId="@CurrentLanguageId"
+				  SelectedVersionId="@SelectedVersionId"
+				  MoveNames="@MoveNames"
+				  AllPokemonMoves="@AllPokemonMoves"
+				  @ref="PokemonInfoLayerRef"/>
+
 
 <style>
-	.btn-find-pokemon {
-		margin-bottom: 20px; /* 버튼 아래 여백 추가 */
-	}
+
 </style>

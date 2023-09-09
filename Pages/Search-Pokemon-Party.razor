@@ -30,7 +30,7 @@
 	private List<PokemonTypeCSV> PokemonTypes = new List<PokemonTypeCSV>();
 	private List<PokemonTypePastCSV> PokemonTypesPast = new List<PokemonTypePastCSV>();
 	private List<TypeNameCSV> TypeNames = new List<TypeNameCSV>();
-
+	public List<MoveNameCSV> MoveNames { get; set; } = new List<MoveNameCSV>();
 
 
 	protected override void OnInitialized()
@@ -47,6 +47,7 @@
 		TypeNames = dataService.TypeNames;
 		PokemonTypes = dataService.PokemonTypes;
 		PokemonTypesPast = dataService.PokemonTypesPast;
+		MoveNames = dataService.MoveNames;
 	}
 
 
@@ -813,6 +814,18 @@
 	}
 
 
+	// 클릭 시 정보 표시 용도
+	private PokemonInfoLayer PokemonInfoLayerRef;
+
+	private void OnPokemonNameClicked(int pokemonId)
+	{
+		var types = GetPokemonTypesById(pokemonId);
+		var abilities = GetAbilityNamesByPokemonId(pokemonId);
+
+		PokemonInfoLayerRef.Show(pokemonId, GetPokemonNameById(pokemonId), types.Item1, types.Item2, abilities.Item1, abilities.Item2, abilities.Item3);
+	}
+
+
 }
 
 @if (isLoading)
@@ -1024,7 +1037,7 @@
 								isFirstRowForSlot = false;
 							}
 							<td>@GetSpeciesIdById(pokemonId)</td>
-							<td>@GetPokemonNameById(pokemonId)</td>
+							<td class="clickable-pokemon-name" @onclick="@(e => { OnPokemonNameClicked(pokemonId); })">@GetPokemonNameById(pokemonId)</td>
 							<td>@types.Item1</td>
 							<td>@types.Item2</td>
 							<td>@abilities.Item1</td>
@@ -1059,33 +1072,10 @@ else
 	</div>
 }
 
-<style>
-	.no-results {
-		padding: 20px;
-		text-align: center;
-		font-size: 18px;
-		color: #999;
-		background-color: #f8f8f8;
-		border: 1px solid #e0e0e0;
-		margin-top: 20px;
-		border-radius: 5px;
-	}
+<PokemonInfoLayer CurrentLanguageId="@CurrentLanguageId"
+				  SelectedVersionId="@SelectedVersionId"
+				  MoveNames="@MoveNames"
+				  AllPokemonMoves="@AllPokemonMoves"
+@ref="PokemonInfoLayerRef" />
 
-	.btn-find-pokemon {
-		margin-bottom: 20px; /* 버튼 아래 여백 추가 */
-	}
 
-	.loading-overlay {
-		position: fixed;
-		top: 10px;
-		left: 50%;
-		transform: translateX(-50%); /* Center horizontally */
-		padding: 10px 20px;
-		background-color: rgba(0, 0, 0, 0.7); /* semi-transparent black */
-		color: white;
-		font-size: 1.5em;
-		border-radius: 5px;
-		z-index: 1000; /* Display above other elements */
-	}
-
-</style>

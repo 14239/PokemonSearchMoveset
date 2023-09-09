@@ -12,13 +12,8 @@
 
     [Parameter] public int CurrentLanguageId { get; set; }
 
-    // 위에서 [Parameter] 선언 부분 밑에 추가해주세요.
-    //[Parameter] public EventCallback<int> OnLanguageChanged { get; set; }
-
-    // ...
-
-
-    public List<MoveNameCSV> MoveNames { get; set; } = new List<MoveNameCSV>();
+    [Parameter]
+    public List<MoveNameCSV> MoveNames { get; set; }
 
     private string _searchTerm = string.Empty;
     public string SearchTerm
@@ -32,19 +27,6 @@
     }
     public List<MoveNameCSV> MatchedMoves { get; set; } = new List<MoveNameCSV>();
     //public List<MoveNameCSV> AddedMoves { get; set; } = new List<MoveNameCSV>();
-
-    protected override async Task OnInitializedAsync()
-    {
-        await LoadData();
-    }
-
-    private async Task LoadData()
-    {
-        MoveNames = await CsvLoader.LoadMoveNames(Http, "database/move_names.csv");
-
-        SearchMoves();
-
-    }
 
     public void SearchMoves()
     {

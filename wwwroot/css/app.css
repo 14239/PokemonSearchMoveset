@@ -160,3 +160,79 @@ a, .btn-link {
     background-color: #007bff; /* 로딩바 채워진 부분의 색상 */
     border-radius: 5px; /* 로딩바 내부의 채워진 부분의 모서리를 둥글게 */
 }
+
+.pokemon-info-layer-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0,0,0,0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.pokemon-info-layer-content {
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    width: 70%; /* or any other width you prefer */
+    max-width: 600px; /* or any other value you prefer */
+    max-height: 80vh; /* 뷰포트 높이의 80%로 제한. 필요에 따라 조절 가능 */
+    overflow-y: auto; /* 내용이 넘치면 스크롤 표시 */
+}
+
+.table-container {
+    display: flex;
+    overflow-x: auto;
+}
+
+.move-name-table, .learn-method-table, .level-table {
+    min-width: 200px; /* 이 값을 조정하여 표의 폭을 조절할 수 있습니다. */
+    border-right: 1px solid #ddd; /* 구분선 추가 */
+}
+
+.level-table {
+    border-right: none; /* 마지막 표에는 구분선 제거 */
+}
+
+.table-scrollable {
+    overflow-y: auto;
+    max-height: 300px; /* 원하는 최대 높이로 조절하세요 */
+}
+
+.no-results {
+    padding: 20px;
+    text-align: center;
+    font-size: 18px;
+    color: #999;
+    background-color: #f8f8f8;
+    border: 1px solid #e0e0e0;
+    margin-top: 20px;
+    border-radius: 5px;
+}
+
+.btn-find-pokemon {
+    margin-bottom: 20px; /* 버튼 아래 여백 추가 */
+}
+
+.clickable-pokemon-name {
+    cursor: pointer;
+    text-decoration: underline;
+    color: blue;
+}
+
+.loading-overlay {
+    position: fixed;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%); /* Center horizontally */
+    padding: 10px 20px;
+    background-color: rgba(0, 0, 0, 0.7); /* semi-transparent black */
+    color: white;
+    font-size: 1.5em;
+    border-radius: 5px;
+    z-index: 1000; /* Display above other elements */
+}

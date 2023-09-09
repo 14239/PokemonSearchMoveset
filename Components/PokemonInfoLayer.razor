@@ -1,0 +1,149 @@
+﻿@using PokemonSearchMoveset.Models
+@using PokemonSearchMoveset.Services
+@using Microsoft.JSInterop
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@inject DataService DataService
+
+@code {
+    // 선택 정보
+    [Parameter] public int CurrentLanguageId { get; set; }
+    [Parameter] public int SelectedVersionId { get; set; }
+
+	[Parameter]
+	public int PokemonId { get; set; }
+
+	public string PokemonName { get; set; }
+
+	public string Type1 { get; set; }
+
+	public string Type2 { get; set; }
+
+	public string Ability1 { get; set; }
+
+	public string Ability2 { get; set; }
+
+	public string AbilityHidden { get; set; }
+
+	//CSV 데이터
+
+	[Parameter]
+	public List<MoveNameCSV> MoveNames { get; set; }
+
+	[Parameter]
+	public List<PokemonMoveCSV> AllPokemonMoves { get; set; }
+
+
+    private bool IsLayerVisible { get; set; }
+    private List<PokemonMoveCSV> PokemonMovesForSelectedPokemon { get; set; } = new List<PokemonMoveCSV>();
+
+    private async Task LoadPokemonMovesForSelectedPokemon()
+    {
+        if (AllPokemonMoves != null)
+        {
+            PokemonMovesForSelectedPokemon = AllPokemonMoves
+                .Where(pm => pm.PokemonId == PokemonId && pm.VersionGroupId == SelectedVersionId)
+                .ToList();
+        }
+    }
+
+
+    public void Show(int pokemonId, string pokemonName, string type1, string type2, string ability1, string ability2, string abilityHidden)
+    {
+        PokemonId = pokemonId;
+        PokemonName = pokemonName;
+        Type1 = type1;
+        Type2 = type2;
+        Ability1 = ability1;
+        Ability2 = ability2;
+        AbilityHidden = abilityHidden;
+
+        LoadPokemonMovesForSelectedPokemon();
+
+        IsLayerVisible = true;
+        StateHasChanged();
+    }
+
+    public void Hide()
+    {
+        IsLayerVisible = false;
+    }
+
+    private void BackgroundClicked()
+    {
+        Hide();
+    }
+
+
+
+	public string GetMoveNameById(int moveId)
+	{
+		var matchingMoveName = MoveNames.FirstOrDefault(mn => mn.MoveId == moveId && mn.LocalLanguageId == CurrentLanguageId);
+		return matchingMoveName?.Name ?? $"Move {moveId}";
+	}
+
+	private Dictionary<int, string> MoveMethods = new Dictionary<int, string>
+	{
+		{1, "Level Up"},
+		{2, "Egg Move"},
+		{3, "Move Tutor"},
+		{4, "TM"},
+		{5, "Stadium"},
+		{6, "Light Ball"},
+		{7, "Colosseum"},
+		{8, "XD Shadow"},
+		{9, "XD Purification"},
+		{10, "Form Change"},
+		{11, "Zygarde Cube"},
+	};
+
+
+}
+@if (IsLayerVisible)
+{
+    <div class="pokemon-info-layer-background" @onclick="BackgroundClicked">
+        <div class="pokemon-info-layer-content" @onclick:stopPropagation>
+            <h2>@PokemonName</h2>
+            <p>Type 1: @Type1</p>
+            <p>Type 2: @Type2</p>
+            <p>Ability 1: @Ability1</p>
+            <p>Ability 2: @Ability2</p>
+            <p>Hidden Ability: @AbilityHidden</p>
+
+
+            <div>
+                <table style="width : 100%;">
+                    <thead>
+                        <tr>
+                            <th style="width: 33%;">Move Name</th>
+                            <th style="width: 33%;">Learn Method</th>
+                            <th style="width: 33%;">Level</th>
+                        </tr>
+                    </thead>
+                        <tbody>
+                            @foreach (var move in PokemonMovesForSelectedPokemon)
+                            {
+                                <tr>
+                                    <td>@GetMoveNameById(move.MoveId)</td>
+                                    <td>@MoveMethods[move.PokemonMoveMethodId]</td>
+                                    <td>
+                                        @if (move.PokemonMoveMethodId == 1)
+                                        {
+                                            @(move.Level == 0 ? "Evo." : move.Level.ToString())
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+            <button @onclick="Hide">Close</button>
+            </div>
+
+
+
+     </div>
+
+}
+
