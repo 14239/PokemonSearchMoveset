@@ -1,4 +1,3 @@
-
 ﻿@using PokemonSearchMoveset.Models
 @using PokemonSearchMoveset.Services
 @inject HttpClient Http
@@ -6,354 +5,405 @@
 
 @page "/pickup-simulation"
 @using System.Collections.Generic
-
+<h2>망망이 VS 해피너스</h2>
+<br />
 <button @onclick="HandleButtonClick">시뮬레이션 시작</button>
-<h3>현재까지의 시뮬레이션 결과:</h3>
+<br />
+<br />
+<h4>현재까지의 시뮬레이션 결과:</h4>
+<br />
 <p>최소 턴: @currentResult.MinTurns</p>
 <p>최대 턴: @currentResult.MaxTurns</p>
 <p>평균 턴: @currentResult.AverageTurns</p>
 <p>시도 횟수: @turnList.Count</p>
 
 <h3>지속된 턴 수: @(simulation.Turns + 1)</h3>
+<br />
 
 @if (log != null)
 {
-    <h3>시뮬레이션 로그:</h3>
-    <ul>
-        @foreach (var entry in log)
-        {
-            <li>@entry</li>
-        }
-    </ul>
+	<h3>시뮬레이션 로그:</h3>
+	<ul>
+		@foreach (var entry in log)
+		{
+			<li>@entry</li>
+		}
+	</ul>
 }
 
 
 
 @code {
-    private List<string> log;
-    private Simulation simulation = new Simulation();
+	private List<string> log;
+	private Simulation simulation = new Simulation();
 
-    private List<int> turnList = new List<int>();
-    private SimulationResult currentResult = new SimulationResult();
+	private List<int> turnList = new List<int>();
+	private SimulationResult currentResult = new SimulationResult();
 
-    public class SimulationResult
-    {
-        public int MinTurns { get; set; }
-        public int MaxTurns { get; set; }
-        public double AverageTurns { get; set; }
-    }
-
-
-    private void HandleButtonClick()
-    {
-        simulation = new Simulation();
-        var simulationResult = simulation.Run();
-        log = simulationResult.Split('\n').ToList();
-
-        turnList.Add(simulation.Turns);
-
-        currentResult.MinTurns = turnList.Min();
-        currentResult.MaxTurns = turnList.Max();
-        currentResult.AverageTurns = turnList.Average();
-    }
+	public class SimulationResult
+	{
+		public int MinTurns { get; set; }
+		public int MaxTurns { get; set; }
+		public double AverageTurns { get; set; }
+	}
 
 
-    public class Move
-    {
-        public string Name { get; set; }
-        public int CurrentPP { get; set; }
-        public int MaxPP { get; set; }
+	private void HandleButtonClick()
+	{
+		simulation = new Simulation();
+		var simulationResult = simulation.Run();
+		log = simulationResult.Split('\n').ToList();
 
-        public void Use()
-        {
-            CurrentPP--;
-        }
-    }
+		turnList.Add(simulation.Turns + 1);
 
-    public class Pokemon
-    {
-        public string Name { get; set; }
-        public bool HasBerry { get; set; }
-        public List<Move> Moves { get; set; }
-        public bool UsedBerryThisTurn { get; set; } = false;
-        public int YawnCounter { get; set; } = 0;
-        public bool IsAsleep { get; set; } = false;
-        public int SleepTurnsLeft { get; set; } = 0; // 남은 수면 턴 수
-    }
-
-    public class Simulation
-    {
-        private const int MaxTurns = 60000;
-        private Pokemon player;
-        private Pokemon opponent;
-        private List<string> log;
-        public int Turns { get; private set; } // 외부에서 이 값을 읽을 수 있도록 합니다.
+		currentResult.MinTurns = turnList.Min();
+		currentResult.MaxTurns = turnList.Max();
+		currentResult.AverageTurns = turnList.Average();
+	}
 
 
+	public class Move
+	{
+		public string Name { get; set; }
+		public int CurrentPP { get; set; }
+		public int MaxPP { get; set; }
 
-        private void ResetSimulation()
-        {
-            Turns = 0;
-            // 다른 초기화 코드 추가
-        }
+		public void Use()
+		{
+			CurrentPP--;
+		}
+	}
 
+	public class Pokemon
+	{
+		public string Name { get; set; }
+		public bool HasBerry { get; set; }
+		public List<Move> Moves { get; set; }
+		public bool UsedBerryThisTurn { get; set; } = false;
+		public int YawnCounter { get; set; } = 0;
+		public bool IsAsleep { get; set; } = false;
+		public int SleepTurnsLeft { get; set; } = 0; // 남은 수면 턴 수
+	}
 
-        public Simulation()
-        {
-            player = new Pokemon
-                {
-                    Name = "망망이",
-                    HasBerry = true,
-                    Moves = new List<Move>
-        {
-            new Move { Name = "트릭", CurrentPP = 10, MaxPP = 10 },
-            new Move { Name = "하품", CurrentPP = 10, MaxPP = 10 }
-        }
-                };
-
-            opponent = new Pokemon
-                {
-                    Name = "해피너스",
-                    Moves = new List<Move>
-        {
-            new Move { Name = "빛의장막", CurrentPP = 30, MaxPP = 30 },
-            new Move { Name = "이판사판태클", CurrentPP = 15, MaxPP = 15 },
-            new Move { Name = "알낳기", CurrentPP = 5, MaxPP = 5 },
-            new Move { Name = "도우미", CurrentPP = 20, MaxPP = 20 },
-        }
-                };
-
-            log = new List<string>();
-        }
-
-        public string Run()
-        {
-            for (Turns = 0; Turns < MaxTurns; Turns++)
-            {
-                // 내 포켓몬 턴
-                PlayerTurn();
-
-                // 과사열매 체크
-                CheckBerry(player);
-                CheckBerry(opponent);
-
-                // 상대 포켓몬 턴
-                OpponentTurn();
-
-                // 과사열매 체크
-                CheckBerry(player);
-                CheckBerry(opponent);
-
-                CheckYawnAndSleepStatus();
-
-                // 열매 줍기
-                Pickup();
-
-
-                // 과사열매 체크
-                CheckBerry(player);
-                CheckBerry(opponent);
-
-                if (IsOver())
-                {
-                    break;
-                }
-            }
-
-            return string.Join("\n", log);
-        }
-
-        private void PlayerTurn()
-        {
-            var trickMove = player.Moves.FirstOrDefault(m => m.Name == "트릭");
-            var yawnMove = player.Moves.FirstOrDefault(m => m.Name == "하품");
-            bool isTrick = false;
-            foreach (var pp in opponent.Moves)
-            {
-                // if ((pp.CurrentPP + 9) <= pp.MaxPP || pp.CurrentPP <= 1)
-                // {
-                //     isTrick = true;
-                // }
-                if ((pp.CurrentPP + 10) <= pp.MaxPP || pp.CurrentPP <= 0)
-                {
-                    isTrick = true;
-                }
-            }
-
-
-            bool isDanger = false;
-            foreach (var pp in opponent.Moves)
-            {
-                if (pp.CurrentPP < 3)
-                {
-                    isDanger = true;
-                }
-            }
-
-            if (false)
-            {
-                // 옮기기 편하게할라고 앞에둔거    
-            }
-            else if (!opponent.IsAsleep && yawnMove != null && yawnMove.CurrentPP > 0 && !(yawnMove.CurrentPP == 1 && !player.HasBerry) && opponent.YawnCounter == 0)
-            {
-                yawnMove.Use();
-                log.Add($"망망이가 하품을 사용했다! (남은 PP : {yawnMove.CurrentPP} / {yawnMove.MaxPP})");
-                /*
-                // 즉시수면 : 버섯포자 형
-                if (!opponent.IsAsleep)
-                    {
-                    opponent.IsAsleep = true;
-                    opponent.SleepTurnsLeft = new Random().Next(1, 4);
-                    log.Add($"해피너스가 잠들어 버렸다!");
-
-                }
-                */
-                ///*
-                // 하품
-                if (opponent.YawnCounter == 0)
-                {
-                    opponent.YawnCounter = 2; // 다음 턴에 잠들게 함
-                }
-                //*/
-            }
-            else if (trickMove != null && trickMove.CurrentPP == 2 && player.HasBerry)
-            {
-                trickMove.Use();
-                log.Add($"!!! 망망이의 트릭 연속 사용1! (남은 PP : {trickMove.CurrentPP} / {trickMove.MaxPP})");
-
-                bool opponentBerry = opponent.HasBerry;
-                opponent.HasBerry = player.HasBerry;
-                player.HasBerry = opponentBerry;
-            }
-            else if (trickMove != null && trickMove.CurrentPP == 1 && !player.HasBerry)
-            {
-                trickMove.Use();
-                log.Add($"!!! 망망이의 트릭 연속 사용2! (남은 PP : {trickMove.CurrentPP} / {trickMove.MaxPP})");
-
-                bool opponentBerry = opponent.HasBerry;
-                opponent.HasBerry = player.HasBerry;
-                player.HasBerry = opponentBerry;
-            }
-            else if (player.HasBerry && isTrick && trickMove != null && trickMove.CurrentPP > 0)
-            {
-                trickMove.Use();
-                log.Add($"망망이가 트릭을 사용했다! (남은 PP : {trickMove.CurrentPP} / {trickMove.MaxPP})");
-
-                bool opponentBerry = opponent.HasBerry;
-                opponent.HasBerry = player.HasBerry;
-                player.HasBerry = opponentBerry;
-            }
-            else
-            {
-                log.Add("망망이는 아무것도 하지 않았다!");
-            }
-        }
+	public class Simulation
+	{
+		private const int MaxTurns = 60000;
+		private Pokemon player;
+		private Pokemon opponent;
+		private List<string> log;
+		public int Turns { get; private set; } // 외부에서 이 값을 읽을 수 있도록 합니다.
 
 
 
-        private void CheckBerry(Pokemon pokemon)
-        {
-            if (pokemon.HasBerry && pokemon.Moves.Any(m => m.CurrentPP == 0 || m.CurrentPP + 10 <= m.MaxPP))
-            {
-                pokemon.HasBerry = false;
-                pokemon.UsedBerryThisTurn = true;
+		public Simulation()
+		{
+			player = new Pokemon
+				{
+					Name = "망망이",
+					HasBerry = true,
+					Moves = new List<Move>
+		{
+			new Move { Name = "트릭", CurrentPP = 10, MaxPP = 10 },
+			new Move { Name = "하품", CurrentPP = 10, MaxPP = 10 }
+		}
+				};
 
-                foreach (var move in pokemon.Moves)
-                {
-                    if (move.CurrentPP == 0 || move.CurrentPP + 10 <= move.MaxPP)
-                    {
-                        move.CurrentPP = Math.Min(move.MaxPP, move.CurrentPP + 10);
-                        log.Add($"{pokemon.Name}가 과사열매를 사용해 {move.Name}의 PP를 회복했다!");
-                        break;
-                    }
-                }
+			opponent = new Pokemon
+				{
+					Name = "해피너스",
+					Moves = new List<Move>
+		{
+			new Move { Name = "빛의장막", CurrentPP = 30, MaxPP = 30 },
+			new Move { Name = "이판사판태클", CurrentPP = 15, MaxPP = 15 },
+			new Move { Name = "알낳기", CurrentPP = 5, MaxPP = 5 },
+			//new Move { Name = "도우미", CurrentPP = 20, MaxPP = 20 },
+		}
+				};
 
-            }
-        }
+			log = new List<string>();
+		}
 
-        private void OpponentTurn()
-        {
-            if (opponent.IsAsleep)
-            {
-                if (opponent.SleepTurnsLeft <= 0)
-                {
-                    opponent.IsAsleep = false;
-                    log.Add($"해피너스가 깨어났다!");
-                }
-                else
-                {
-                    log.Add($"해피너스는 잠들어있다!");
-
-                    var movesPPString = string.Join(", ", opponent.Moves.Select(m => $"{m.Name}({m.CurrentPP}/{m.MaxPP})"));
-                    log.Add($"해피너스의 기술 PP: {movesPPString}");
-
-                    opponent.SleepTurnsLeft--;
-                    return; // 잠든 상태이므로 행동 불가
-                }
-            }
-
-            var availableMoves = opponent.Moves.Where(m => m.CurrentPP > 0).ToList();
-            if (availableMoves.Count > 0)
-            {
-                var move = availableMoves[new Random().Next(availableMoves.Count)];
-                move.Use();
-                log.Add($"해피너스가 {move.Name}을 사용했다!");
-
-                var movesPPString = string.Join(", ", opponent.Moves.Select(m => $"{m.Name}({m.CurrentPP}/{m.MaxPP})"));
-                log.Add($"해피너스의 기술 PP: {movesPPString}");
-            }
-        }
+		public string Run()
+		{
+			for (Turns = 0; Turns < MaxTurns; Turns++)
+			{
+				log.Add($"턴 {Turns+1} 시작");
 
 
-        private void Pickup()
-        {
-            if (!player.HasBerry && (player.UsedBerryThisTurn || opponent.UsedBerryThisTurn))
-            {
-                player.HasBerry = true;
-                log.Add("망망이가 과사열매를 회수했다!");
-            }
-            player.UsedBerryThisTurn = false;
-            opponent.UsedBerryThisTurn = false;
-        }
+				// 내 포켓몬 턴
+				PlayerTurn();
 
-        private bool IsOver()
-        {
-            // 상대 포켓몬의 모든 기술의 PP가 0인지 체크
-            bool allMovesOutOfPP = opponent.Moves.All(m => m.CurrentPP == 0);
-            bool allMovesOutOfPP2 = player.Moves.All(m => m.CurrentPP == 0);
+				// 과사열매 체크
+				CheckBerry(player);
+				CheckBerry(opponent);
 
-            if (!player.HasBerry && !opponent.HasBerry)
-            {
-                log.Add($"{Turns + 1}턴에 과사열매가 사라졌다!");
-                return true;
-            }
-            else if (allMovesOutOfPP)
-            {
-                log.Add($"해피너스의 모든 기술의 PP가 소진되었다!");
-                return true;
-            }
-            return false;
-        }
+				// 상대 포켓몬 턴
+				OpponentTurn();
+
+				// 과사열매 체크
+				CheckBerry(player);
+				CheckBerry(opponent);
+
+				CheckYawnAndSleepStatus();
+
+				// 열매 줍기
+				Pickup();
 
 
-        private void CheckYawnAndSleepStatus()
-        {
-            if(opponent.YawnCounter !=
-                0)
-            {
-                opponent.YawnCounter--;
-                if(opponent.YawnCounter == 0)
-                {
-                    opponent.IsAsleep = true;
-                    opponent.SleepTurnsLeft = new Random().Next(1, 4);
-                    log.Add($"해피너스가 잠들어 버렸다!");
+				// 과사열매 체크
+				CheckBerry(player);
+				CheckBerry(opponent);
 
-                }
-            }
-        }
-    }
+				if (IsOver())
+				{
+					break;
+				}
+			}
+
+			return string.Join("\n", log);
+		}
+
+		private void PlayerTurn()
+		{
+			var trickMove = player.Moves.FirstOrDefault(m => m.Name == "트릭");
+			var yawnMove = player.Moves.FirstOrDefault(m => m.Name == "하품");
+			bool isTrick = false;
+			bool isDanger = false;
+
+			int dangerCounter = 0;
+
+			foreach (var move in opponent.Moves)
+			{
+				/*
+				if ((move.CurrentPP + 9) <= move.MaxPP || move.CurrentPP <= 1)
+					{
+					dangerCounter ++;
+				}
+				*/
+				/*
+				if ((move.CurrentPP + 10) <= move.MaxPP || move.CurrentPP <= 0 || dangerCounter > 1)
+					{
+					isTrick = true;
+				}
+				*/
+				///*
+				if(move.CurrentPP == 0)
+				{
+					isTrick = true;
+				}
+				
+				if (move.CurrentPP <= 2)
+				{
+					isDanger = true;
+				}
+			}
+
+			
+
+
+			if (false)
+			{
+				// 옮기기 편하게할라고 앞에둔거
+			}
+			else if (!opponent.IsAsleep && yawnMove != null && yawnMove.CurrentPP > 0 && !(yawnMove.CurrentPP == 1 && !player.HasBerry) && opponent.YawnCounter == 0)
+			{
+				yawnMove.Use();
+				log.Add($"망망이가 하품을 사용했다! (남은 PP : {yawnMove.CurrentPP} / {yawnMove.MaxPP})");
+				///*
+				// 즉시수면 : 버섯포자 형
+				if (!opponent.IsAsleep)
+					{
+					opponent.IsAsleep = true;
+					opponent.SleepTurnsLeft = new Random().Next(1, 4);
+					log.Add($"해피너스가 잠들어 버렸다!");
+
+				}
+				//*/
+				/*
+				// 하품
+				if (opponent.YawnCounter == 0)
+				{
+					opponent.YawnCounter = 2; // 다음 턴에 잠들게 함
+				}
+				*/
+			}
+			/*
+			else if (trickMove != null && trickMove.CurrentPP == 6 && player.HasBerry && isTrick)
+			{
+				trickMove.Use();
+				log.Add($"!!! 망망이의 트릭 연속 사용 6! (남은 PP : {trickMove.CurrentPP} / {trickMove.MaxPP})");
+
+				bool opponentBerry = opponent.HasBerry;
+				opponent.HasBerry = player.HasBerry;
+				player.HasBerry = opponentBerry;
+			}
+			else if (trickMove != null && trickMove.CurrentPP == 5 && !player.HasBerry && isTrick)
+			{
+				trickMove.Use();
+				log.Add($"!!! 망망이의 트릭 연속 사용 5! (남은 PP : {trickMove.CurrentPP} / {trickMove.MaxPP})");
+
+				bool opponentBerry = opponent.HasBerry;
+				opponent.HasBerry = player.HasBerry;
+				player.HasBerry = opponentBerry;
+			}
+			else if (trickMove != null && trickMove.CurrentPP == 4 && player.HasBerry && isTrick)
+			{
+				trickMove.Use();
+				log.Add($"!!! 망망이의 트릭 연속 사용 4! (남은 PP : {trickMove.CurrentPP} / {trickMove.MaxPP})");
+
+				bool opponentBerry = opponent.HasBerry;
+				opponent.HasBerry = player.HasBerry;
+				player.HasBerry = opponentBerry;
+			}
+			else if (trickMove != null && trickMove.CurrentPP == 3 && !player.HasBerry && isTrick)
+			{
+				trickMove.Use();
+				log.Add($"!!! 망망이의 트릭 연속 사용 3! (남은 PP : {trickMove.CurrentPP} / {trickMove.MaxPP})");
+
+				bool opponentBerry = opponent.HasBerry;
+				opponent.HasBerry = player.HasBerry;
+				player.HasBerry = opponentBerry;
+			}
+			*/
+			else if (trickMove != null && trickMove.CurrentPP == 2 && player.HasBerry)
+			{
+				trickMove.Use();
+				log.Add($"!!! 망망이의 트릭 연속 사용 2! (남은 PP : {trickMove.CurrentPP} / {trickMove.MaxPP})");
+
+				bool opponentBerry = opponent.HasBerry;
+				opponent.HasBerry = player.HasBerry;
+				player.HasBerry = opponentBerry;
+			}
+			else if (trickMove != null && trickMove.CurrentPP == 1 && !player.HasBerry)
+			{
+				trickMove.Use();
+				log.Add($"!!! 망망이의 트릭 연속 사용 1! (남은 PP : {trickMove.CurrentPP} / {trickMove.MaxPP})");
+
+				bool opponentBerry = opponent.HasBerry;
+				opponent.HasBerry = player.HasBerry;
+				player.HasBerry = opponentBerry;
+			}
+			
+
+			else if (player.HasBerry && isTrick && trickMove != null && trickMove.CurrentPP > 0)
+			{
+				trickMove.Use();
+				log.Add($"망망이가 트릭을 사용했다! (남은 PP : {trickMove.CurrentPP} / {trickMove.MaxPP})");
+
+				bool opponentBerry = opponent.HasBerry;
+				opponent.HasBerry = player.HasBerry;
+				player.HasBerry = opponentBerry;
+			}
+			else
+			{
+				log.Add("망망이는 아무것도 하지 않았다!");
+			}
+		}
+
+
+
+		private void CheckBerry(Pokemon pokemon)
+		{
+			if (pokemon.HasBerry && pokemon.Moves.Any(m => m.CurrentPP == 0))
+			{
+				pokemon.HasBerry = false;
+				pokemon.UsedBerryThisTurn = true;
+
+				foreach (var move in pokemon.Moves)
+				{
+					if (move.CurrentPP == 0)
+					{
+						move.CurrentPP = Math.Min(move.MaxPP, move.CurrentPP + 10);
+						log.Add($"{pokemon.Name}가 과사열매를 사용해 {move.Name}의 PP를 회복했다!");
+						break;
+					}
+				}
+
+			}
+		}
+
+		private void OpponentTurn()
+		{
+			if (opponent.IsAsleep)
+			{
+				if (opponent.SleepTurnsLeft <= 0)
+				{
+					opponent.IsAsleep = false;
+					log.Add($"해피너스가 깨어났다!");
+				}
+				else
+				{
+					log.Add($"해피너스는 잠들어있다!");
+
+					var movesPPString = string.Join(", ", opponent.Moves.Select(m => $"{m.Name}({m.CurrentPP}/{m.MaxPP})"));
+					log.Add($"해피너스의 기술 PP: {movesPPString}");
+
+					opponent.SleepTurnsLeft--;
+					return; // 잠든 상태이므로 행동 불가
+				}
+			}
+
+			var availableMoves = opponent.Moves.Where(m => m.CurrentPP > 0).ToList();
+			if (availableMoves.Count > 0)
+			{
+				var move = availableMoves[new Random().Next(availableMoves.Count)];
+				move.Use();
+				log.Add($"해피너스가 {move.Name}을 사용했다!");
+
+				var movesPPString = string.Join(", ", opponent.Moves.Select(m => $"{m.Name}({m.CurrentPP}/{m.MaxPP})"));
+				log.Add($"해피너스의 기술 PP: {movesPPString}");
+			}
+		}
+
+
+		private void Pickup()
+		{
+			if (!player.HasBerry && (player.UsedBerryThisTurn || opponent.UsedBerryThisTurn))
+			{
+				player.HasBerry = true;
+				log.Add("망망이가 과사열매를 회수했다!");
+			}
+			player.UsedBerryThisTurn = false;
+			opponent.UsedBerryThisTurn = false;
+		}
+
+		private bool IsOver()
+		{
+			// 상대 포켓몬의 모든 기술의 PP가 0인지 체크
+			bool allMovesOutOfPP = opponent.Moves.All(m => m.CurrentPP == 0);
+			bool allMovesOutOfPP2 = player.Moves.All(m => m.CurrentPP == 0);
+
+			if (!player.HasBerry && !opponent.HasBerry)
+			{
+				log.Add($"{Turns + 1}턴에 과사열매가 사라졌다!");
+				return true;
+			}
+			else if (allMovesOutOfPP)
+			{
+				log.Add($"해피너스의 모든 기술의 PP가 소진되었다!");
+				return true;
+			}
+			return false;
+		}
+
+
+		private void CheckYawnAndSleepStatus()
+		{
+			if (opponent.YawnCounter !=
+				0)
+			{
+				opponent.YawnCounter--;
+				if (opponent.YawnCounter == 0)
+				{
+					opponent.IsAsleep = true;
+					opponent.SleepTurnsLeft = new Random().Next(1, 4);
+					log.Add($"해피너스가 잠들어 버렸다!");
+
+				}
+			}
+		}
+	}
 
 }
 
 
- 

@@ -1,0 +1,63 @@
+﻿@using PokemonSearchMoveset.Models
+@using PokemonSearchMoveset.Services
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+
+@page "/pickup-counter"
+
+<style>
+    .pp-input {
+        width: 50px;
+    }
+</style>
+
+<h3>기술 PP 관리</h3>
+
+<h4>내 포켓몬의 기술</h4>
+@foreach (var move in PlayerMoves)
+{
+    <div>
+        기술명: <input type="text" @bind="move.Name" />
+        최대 PP: <input type="number" min="0" @bind="move.MaxPP" />
+        현재 PP: <input type="number" min="0" max="@move.MaxPP" @bind="move.CurrentPP" class="pp-input" />
+        <button @onclick="(() => DecreasePP(move))">-</button>
+        <button @onclick="(() => IncreasePP(move, 1))">+</button>
+        <button @onclick="(() => IncreasePP(move, 10))">과사열매</button>
+    </div>
+}
+
+<h4>상대 포켓몬의 기술</h4>
+@foreach (var move in OpponentMoves)
+{
+    <div>
+        기술명: <input type="text" @bind="move.Name" />
+        최대 PP: <input type="number" min="0" @bind="move.MaxPP" />
+        현재 PP: <input type="number" min="0" max="@move.MaxPP" @bind="move.CurrentPP" class="pp-input" />
+        <button @onclick="(() => DecreasePP(move))">-</button>
+        <button @onclick="(() => IncreasePP(move, 1))">+</button>
+        <button @onclick="(() => IncreasePP(move, 10))">과사열매</button>
+    </div>
+}
+
+@code {
+    public List<Move> PlayerMoves { get; set; } = Enumerable.Range(1, 4).Select(i => new Move { Name = $"기술{i}", MaxPP = 10 }).ToList();
+    public List<Move> OpponentMoves { get; set; } = Enumerable.Range(1, 4).Select(i => new Move { Name = $"기술{i}", MaxPP = 10 }).ToList();
+
+    public class Move
+    {
+        public string Name { get; set; }
+        public int CurrentPP { get; set; }
+        public int MaxPP { get; set; }
+    }
+
+    private void DecreasePP(Move move)
+    {
+        if (move.CurrentPP > 0)
+            move.CurrentPP--;
+    }
+
+    private void IncreasePP(Move move, int amount)
+    {
+        move.CurrentPP = Math.Min(move.CurrentPP + amount, move.MaxPP);
+    }
+}
