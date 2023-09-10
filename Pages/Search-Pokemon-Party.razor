@@ -537,7 +537,7 @@
 
 		// 현재 슬롯의 포켓몬 ID 목록과 일치하며 주어진 moveId를 가진 포켓몬 목록 검색
 		var pokemonsWithGivenMove = AllPokemonMoves
-		.Where(pm => currentPokemonIds.Contains(pm.PokemonId) && (pm.MoveId == moveId || pm.PokemonId == 235) && pm.VersionGroupId == SelectedVersionId) // 루브도의 ID가 235라고 가정
+		.Where(pm => currentPokemonIds.Contains(pm.PokemonId) && ((pm.MoveId == moveId && pm.VersionGroupId == SelectedVersionId) || pm.PokemonId == 235)) // 루브도의 ID가 235라고 가정
 			.Select(pm => pm.PokemonId)
 			.Distinct()
 			.ToList();
