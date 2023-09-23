@@ -1,0 +1,371 @@
+﻿@using PokemonSearchMoveset.Models
+@using PokemonSearchMoveset.Services
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+
+@using System.Collections.Generic
+<h2>두르쥐 VS 해피너스</h2>
+<h3>앙코르 바꿔치기 애교부리기</h3>
+
+<br />
+<button @onclick="HandleButtonClick">시뮬레이션 시작</button>
+<br />
+<br />
+<h4>현재까지의 시뮬레이션 결과:</h4>
+<br />
+<p>최소 턴: @currentResult.MinTurns</p>
+<p>최대 턴: @currentResult.MaxTurns</p>
+<p>평균 턴: @currentResult.AverageTurns</p>
+<p>시도 횟수: @turnList.Count</p>
+
+<h3>지속된 턴 수: @(simulation.Turns + 1)</h3>
+<br />
+
+@if (log != null)
+{
+	<h3>시뮬레이션 로그:</h3>
+	<ul>
+		@foreach (var entry in log)
+		{
+			<li>@entry</li>
+		}
+	</ul>
+}
+
+
+
+@code {
+	private List<string> log;
+	private Simulation simulation = new Simulation();
+
+	private List<int> turnList = new List<int>();
+	private SimulationResult currentResult = new SimulationResult();
+
+	public class SimulationResult
+	{
+		public int MinTurns { get; set; }
+		public int MaxTurns { get; set; }
+		public double AverageTurns { get; set; }
+	}
+
+
+	private void HandleButtonClick()
+	{
+		simulation = new Simulation();
+		var simulationResult = simulation.Run();
+		log = simulationResult.Split('\n').ToList();
+
+		turnList.Add(simulation.Turns + 1);
+
+		currentResult.MinTurns = turnList.Min();
+		currentResult.MaxTurns = turnList.Max();
+		currentResult.AverageTurns = turnList.Average();
+	}
+
+
+	public class Move
+	{
+		public string Name { get; set; }
+		public int CurrentPP { get; set; }
+		public int MaxPP { get; set; }
+
+		public void Use()
+		{
+			CurrentPP--;
+		}
+	}
+
+	public class Pokemon
+	{
+		public string Name { get; set; }
+		public bool HasBerry { get; set; }
+		public List<Move> Moves { get; set; }
+		public bool UsedBerryThisTurn { get; set; } = false;
+		public int EncoreCounter { get; set; } = 0;
+		public bool IsAsleep { get; set; } = false;
+		public bool IsHit { get; set; } = false;
+
+		public int SleepTurnsLeft { get; set; } = 0; // 남은 수면 턴 수
+	}
+
+	public class Simulation
+	{
+		private const int MaxTurns = 100000;
+		private Pokemon player;
+		private Pokemon opponent;
+		private List<string> log;
+		public int Turns { get; private set; } // 외부에서 이 값을 읽을 수 있도록 합니다.
+
+
+
+		public Simulation()
+		{
+			player = new Pokemon
+				{
+					Name = "두르쥐",
+					HasBerry = true,
+					Moves = new List<Move>
+		{
+			new Move { Name = "바꿔치기", CurrentPP = 10, MaxPP = 10 },
+			new Move { Name = "앙코르", CurrentPP = 5, MaxPP = 5 },
+			new Move { Name = "애교부리기", CurrentPP = 19, MaxPP = 20 },
+		}
+				};
+
+			opponent = new Pokemon
+				{
+					Name = "해피너스",
+					Moves = new List<Move>
+		{
+			//new Move { Name = "도우미", CurrentPP = 20, MaxPP = 20 },
+			new Move { Name = "빛의장막", CurrentPP = 29, MaxPP = 30 },
+			new Move { Name = "이판사판태클", CurrentPP = 15, MaxPP = 15 },
+			new Move { Name = "알낳기", CurrentPP = 5, MaxPP = 5 },
+		}
+				};
+
+			log = new List<string>();
+		}
+
+		public string Run()
+		{
+			for (Turns = 0; Turns < MaxTurns; Turns++)
+			{
+				log.Add($"턴 {Turns + 1} 시작");
+
+
+				// 내 포켓몬 턴
+				PlayerTurn();
+
+				// 과사열매 체크
+				CheckBerry(player);
+				CheckBerry(opponent);
+
+				// 상대 포켓몬 턴
+				OpponentTurn();
+
+				// 과사열매 체크
+				CheckBerry(player);
+				CheckBerry(opponent);
+
+				CheckEncoreStatus();
+
+				// 열매 줍기
+				Pickup();
+
+
+				// 과사열매 체크
+				CheckBerry(player);
+				CheckBerry(opponent);
+
+				if (IsOver())
+				{
+					break;
+				}
+
+				// 로그를 1000개로 제한
+				if (log.Count > 1000)
+				{
+					log = log.Skip(log.Count - 1000).ToList(); // 가장 최근의 1000개 로그만 남김
+				}
+			}
+
+			return string.Join("\n", log);
+		}
+
+		private void PlayerTurn()
+		{
+			var trickMove = player.Moves.FirstOrDefault(m => m.Name == "바꿔치기");
+			var encoreMove = player.Moves.FirstOrDefault(m => m.Name == "앙코르");
+			var charmMove = player.Moves.FirstOrDefault(m => m.Name == "애교부리기");
+			bool isTrick = false;
+
+			// 트릭 사용 여부 체크
+			foreach (var move in opponent.Moves)
+			{
+
+				// 상대가 PP 1 이하이고 열매 없으면 트릭으로 줘야함
+				if (move.CurrentPP <= 1 && !opponent.HasBerry)
+				{
+					isTrick = true;
+				}
+
+			}
+			// 기본적으로 매 턴 앙코르
+			if (encoreMove != null && encoreMove.CurrentPP > 0 && opponent.EncoreCounter == 0)
+			{
+				encoreMove.Use();
+				log.Add($"두르쥐의 앙코르 사용 성공!");
+
+				opponent.EncoreCounter = 3;
+
+			}
+
+
+			else if (trickMove != null && trickMove.CurrentPP == 2 && player.HasBerry && opponent.EncoreCounter >= 2)
+			{
+				trickMove.Use();
+				log.Add($"!!! 두르쥐의 바꿔치기 연속 사용 2!");
+
+				bool opponentBerry = opponent.HasBerry;
+				opponent.HasBerry = player.HasBerry;
+				player.HasBerry = opponentBerry;
+			}
+			else if (trickMove != null && trickMove.CurrentPP == 1 && !player.HasBerry)
+			{
+				trickMove.Use();
+				log.Add($"!!! 두르쥐의 바꿔치기 연속 사용 1!");
+
+				bool opponentBerry = opponent.HasBerry;
+				opponent.HasBerry = player.HasBerry;
+				player.HasBerry = opponentBerry;
+			}
+
+			else if (player.HasBerry && trickMove.CurrentPP > 0 && isTrick)
+			{
+				trickMove.Use();
+
+				bool opponentBerry = opponent.HasBerry;
+				opponent.HasBerry = player.HasBerry;
+				player.HasBerry = opponentBerry;
+
+				if (player.HasBerry)
+				{
+					log.Add($"두르쥐가 바꿔치기를 사용해 열매를 가져왔다!");
+
+				}
+				else
+				{
+					log.Add($"두르쥐가 바꿔치기를 사용해 열매를 넘겼다!");
+
+				}
+			}
+			else if (player.HasBerry && encoreMove.CurrentPP == 1)
+			{
+				encoreMove.Use();
+				log.Add($"!!! 두르쥐의 앙코르 사용 실패!");
+			}
+			else if (charmMove.CurrentPP > 0 && player.HasBerry)
+			{
+				charmMove.Use();
+				log.Add($"두르쥐의 애교부리기!");
+
+			}
+			else
+			{
+				log.Add("이런 상황이 발생하면 안돼");
+			}
+
+			// 기술 PP 정리
+			var movesPPString = string.Join(", ", player.Moves.Select(m => $"{m.Name}({m.CurrentPP}/{m.MaxPP})"));
+			log.Add($"두르쥐의 기술 PP: {movesPPString}");
+		}
+
+
+
+		private void CheckBerry(Pokemon pokemon)
+		{
+			if (pokemon.HasBerry && pokemon.Moves.Any(m => m.CurrentPP == 0))
+			{
+				pokemon.HasBerry = false;
+				pokemon.UsedBerryThisTurn = true;
+
+				foreach (var move in pokemon.Moves)
+				{
+					if (move.CurrentPP == 0)
+					{
+						move.CurrentPP = Math.Min(move.MaxPP, move.CurrentPP + 10);
+						log.Add($"{pokemon.Name}가 과사열매를 사용해 {move.Name}의 PP를 회복했다!");
+						break;
+					}
+				}
+
+			}
+		}
+
+		private void OpponentTurn()
+		{
+
+			if(opponent.EncoreCounter > 0)
+			{
+				opponent.Moves[0].Use();
+				log.Add($"해피너스가 빛의장막을 사용했다!");
+				var movesPPString = string.Join(", ", opponent.Moves.Select(m => $"{m.Name}({m.CurrentPP}/{m.MaxPP})"));
+				log.Add($"해피너스의 기술 PP: {movesPPString}");
+			}
+			else
+			{
+				player.IsHit = true;
+				var availableMoves = opponent.Moves.Where(m => m.CurrentPP > 0).ToList();
+
+				if (availableMoves.Count > 0)
+				{
+					var move = availableMoves[new Random().Next(availableMoves.Count)];
+					move.Use();
+					log.Add($"!!!!앙코르가 끝나고 해피너스가 {move.Name}을 사용했다!");
+					if (move.Name == "이판사판태클")
+					{
+						player.IsHit = true;
+					}
+					var movesPPString = string.Join(", ", opponent.Moves.Select(m => $"{m.Name}({m.CurrentPP}/{m.MaxPP})"));
+					log.Add($"해피너스의 기술 PP: {movesPPString}");
+				}
+			}
+
+
+		}
+
+
+		private void Pickup()
+		{
+			if (!player.HasBerry && (player.UsedBerryThisTurn || opponent.UsedBerryThisTurn))
+			{
+				player.HasBerry = true;
+				log.Add("두르쥐가 과사열매를 회수했다!");
+			}
+			player.UsedBerryThisTurn = false;
+			opponent.UsedBerryThisTurn = false;
+		}
+
+		private bool IsOver()
+		{
+			// 상대 포켓몬의 모든 기술의 PP가 0인지 체크
+			bool allMovesOutOfPP = opponent.Moves.All(m => m.CurrentPP == 0);
+			bool allMovesOutOfPP2 = player.Moves.All(m => m.CurrentPP == 0);
+
+			if (!player.HasBerry && !opponent.HasBerry)
+			{
+				log.Add($"{Turns + 1}턴에 과사열매가 사라졌다!");
+				return true;
+			}
+			else if (allMovesOutOfPP)
+			{
+				log.Add($"해피너스의 모든 기술의 PP가 소진되었다!");
+				return true;
+			}
+			else if (player.IsHit)
+			{
+				log.Add($"해피너스의 앙코르가 끝나서 다른 기술을 사용했다!");
+				return true;
+			}
+			return false;
+		}
+
+
+		private void CheckEncoreStatus()
+		{
+			if (opponent.EncoreCounter !=	0)
+			{
+				opponent.EncoreCounter--;
+				if (opponent.EncoreCounter == 0)
+				{
+					log.Add($"해피너스의 앙코르가 끝났다!");
+
+				}
+			}
+		}
+	}
+
+}
+
+

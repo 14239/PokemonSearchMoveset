@@ -1,0 +1,36 @@
+﻿@page "/pickup-simulator"
+@using PokemonSearchMoveset.Models
+@using PokemonSearchMoveset.Services
+@using PokemonSearchMoveset.Components
+
+<select @bind="selectedType" @bind:event="onchange">
+    <option value="type1">망망이 VS 해피너스 - 1차전</option>
+    <option value="type2">망망이 VS 해피너스 - 2차전</option>
+    <option value="type3">망망이 VS 해피너스 - 3차전</option>
+    <option value="type4">두르쥐 VS 해피너스 - 1차전</option>
+    <!-- 다른 옵션들... -->
+</select>
+
+@if (selectedType == "type1")
+{
+    <Pickup_Simulation />
+
+}
+else if (selectedType == "type2")
+{
+    <Pickup_Simulation2 />
+}
+else if (selectedType == "type3")
+{
+    <Pickup_Simulation3 />
+}
+else if (selectedType == "type4")
+{
+    <Pickup_Simulation4 />
+}
+
+@code {
+    private string selectedType = "type1";
+
+    
+}
