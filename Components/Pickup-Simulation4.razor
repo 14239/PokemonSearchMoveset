@@ -184,8 +184,8 @@
 			foreach (var move in opponent.Moves)
 			{
 
-				// 상대가 PP 1 이하이고 열매 없으면 트릭으로 줘야함
-				if (move.CurrentPP <= 1 && !opponent.HasBerry)
+				// 상대가 PP 1 이하이고 열매 없으면 트릭으로 줘야함. 다음턴 앵콜 써야하면 pp 2남아도 줘야함
+				if ((move.CurrentPP <= 1 || (move.CurrentPP <= 2 && opponent.EncoreCounter <= 1)) && !opponent.HasBerry)
 				{
 					isTrick = true;
 				}
