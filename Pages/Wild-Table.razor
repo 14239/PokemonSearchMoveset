@@ -1,0 +1,276 @@
+﻿@page "/wild-table"
+
+@using Microsoft.AspNetCore.Components.Forms
+@using PokemonSearchMoveset.Models
+@using PokemonSearchMoveset.Services
+@using Microsoft.JSInterop
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@using PokemonSearchMoveset.Components
+@inject DataService DataService
+@using System.Globalization
+@using System.IO
+
+<InputFile OnChange="LoadCsvData" />
+
+<button @onclick="GenerateOutput">Generate Output Table</button>
+
+@if (OutputTable != null)
+{
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Pokemon Name</th>
+                <th>Level</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var row in OutputTable)
+            {
+                <tr>
+                    <td>@row.Id</td>
+                    <td>@row.Name</td>
+                    <td>@row.Level</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+@code {
+    [Inject]
+    private DataService dataService { get; set; }
+
+
+    private List<PokemonCSV> Pokemons { get; set; } = new List<PokemonCSV>();
+    private List<WildPokemon> wildPokemons { get; set; } = new List<WildPokemon>(); // 이 부분을 추가
+    private List<OutputRow> OutputTable { get; set; }
+
+
+    protected override void OnInitialized()
+    {
+        Pokemons = dataService.Pokemons;
+    }
+
+
+
+    private class PokemonName
+    {
+        public string Name { get; set; }
+        public string LevelRange { get; set; }
+    }
+
+    private class OutputRow
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public int Level { get; set; }
+    }
+
+    public class WildPokemon
+    {
+        public string Location { get; set; }
+        public string SubLocation { get; set; }
+        public string Name { get; set; }
+        public string Version1 { get; set; }
+        public string Version2 { get; set; }
+        public string LevelRange { get; set; }
+    }
+
+    private async Task LoadCsvData(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+
+        if (file != null)
+        {
+            var stream = file.OpenReadStream();
+            using var reader = new StreamReader(stream);
+            var csvData = await reader.ReadToEndAsync();
+
+            wildPokemons = ParseInputData(csvData);
+        }
+    }
+
+
+
+
+
+    private List<WildPokemon> ParseInputData(string csvData)
+    {
+        var lines = csvData.Split('\n').Skip(1); // 첫 번째 행은 헤더이므로 생략
+        var result = new List<WildPokemon>();
+
+        string previousLine = null;
+
+        foreach (var line in lines)
+        {
+            var currentLine = line;
+            if (previousLine != null)
+            {
+                currentLine = previousLine + currentLine;
+                previousLine = null;
+            }
+
+            var tokens = currentLine.Split(',');
+            if (tokens.Length >= 7) // 최소한의 필요한 열이 있는지 확인
+            {
+                result.Add(new WildPokemon
+                    {
+                        Location = tokens[0].Replace("\"", "").Trim(),
+                        SubLocation = tokens[1].Trim(),
+                        Name = tokens[2].Trim(),
+                        Version1 = tokens[3].Trim(),
+                        Version2 = tokens[4].Trim(),
+                        LevelRange = tokens[5].Trim()
+                    });
+            }
+            else
+            {
+                previousLine = currentLine;
+            }
+        }
+
+        return result;
+    }
+
+    private void GenerateOutput()
+    {
+        OutputTable = new List<OutputRow>();
+
+        foreach (var wildPokemon in wildPokemons)
+        {
+            // 이미 OutputTable에 해당 이름이 있다면 생략
+            if (OutputTable.Any(row => string.Equals(row.Name, wildPokemon.Name, StringComparison.OrdinalIgnoreCase)))
+                continue;
+
+            // 첫 줄의 이름을 추출
+            var primaryName = wildPokemon.Name.Replace("\"", "").Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None)[0];
+            Console.WriteLine($"Current Name: {primaryName}"); // 이름 출력
+
+            // 이름에서 띄어쓰기를 하이픈으로 교체
+            var formattedName = primaryName.Replace(" ", "-").Replace("é", "e").ToLower();
+
+            // 동일한 이름을 찾는다
+            var exactMatch = Pokemons.FirstOrDefault(p => string.Equals(p.identifier, formattedName, StringComparison.OrdinalIgnoreCase));
+
+            var bestMatch = new PokemonCSV();
+
+            // 한 줄이고 동일한 이름이 있다면 사용
+            if (!wildPokemon.Name.Contains("\"") && exactMatch != null)
+            {
+
+                AddOutputRow(exactMatch, wildPokemon);
+
+            }
+            else
+            {
+                // 포맷된 이름이 포함된 후보를 찾는다
+                var candidates = Pokemons.Where(p => p.identifier.Contains(formattedName, StringComparison.OrdinalIgnoreCase)).ToList();
+
+                if (wildPokemon.Name.Contains("\""))
+                {
+                    // 두 줄 이름이면 후보 목록에서 가장 유사한 이름을 선택
+                    bestMatch = candidates.OrderBy(p => CalculateSimilarity(p.identifier, formattedName)).FirstOrDefault();
+                }
+                else
+                {
+                    // 한 줄 이름이면 후보 목록에서 가장 앞번호 이름을 선택
+                    bestMatch = candidates.FirstOrDefault();
+                }
+
+                if (bestMatch != null)
+                {
+                    AddOutputRow(bestMatch, wildPokemon);
+                }
+                else
+                {
+                    Console.WriteLine($"No match found for {wildPokemon.Name}.");
+                }
+            }
+        }
+    }
+
+
+
+    private void AddOutputRow(PokemonCSV matchedPokemon, WildPokemon wildPokemon)
+    {
+        var levels = GetLevelsFromRange(wildPokemon.LevelRange);
+
+        foreach (var level in levels)
+        {
+            OutputTable.Add(new OutputRow { Id = matchedPokemon.Id, Name = wildPokemon.Name, Level = level });
+        }
+    }
+
+
+
+    private int CalculateLevenshteinDistance(string source, string target)
+    {
+        int n = source.Length;
+        int m = target.Length;
+        int[,] d = new int[n + 1, m + 1];
+
+        if (n == 0) return m;
+        if (m == 0) return n;
+
+        for (int i = 0; i <= n; d[i, 0] = i++) { }
+        for (int j = 0; j <= m; d[0, j] = j++) { }
+
+        for (int i = 1; i <= n; i++)
+        {
+            for (int j = 1; j <= m; j++)
+            {
+                int cost = (target[j - 1] == source[i - 1]) ? 0 : 1;
+
+                d[i, j] = Math.Min(
+                    Math.Min(d[i - 1, j] + 1, d[i, j - 1] + 1),
+                    d[i - 1, j - 1] + cost);
+            }
+        }
+        return d[n, m];
+    }
+
+    private double CalculateSimilarity(string source, string target)
+    {
+        source = source.Replace("\n", "").Replace(" ", "");
+        target = target.Replace("\n", "").Replace(" ", "");
+
+        int maxLength = Math.Max(source.Length, target.Length);
+        if (maxLength == 0) return 1.0;
+
+        return (1.0 - ((double)CalculateLevenshteinDistance(source, target) / maxLength));
+    }
+
+
+    private IEnumerable<int> GetLevelsFromRange(string range)
+    {
+        if (range.Contains("×"))
+            return Enumerable.Empty<int>();
+
+        if (range.Contains("-"))
+        {
+            var parts = range.Split('-');
+            if (parts.Length != 2)
+                return Enumerable.Empty<int>();
+
+            var start = int.Parse(parts[0]);
+            var end = int.Parse(parts[1]);
+            return Enumerable.Range(start, end - start + 1);
+        }
+        else
+        {
+            // 단일 레벨 처리
+            int singleLevel;
+            if (int.TryParse(range, out singleLevel))
+            {
+                return new List<int> { singleLevel };
+            }
+            else
+            {
+                return Enumerable.Empty<int>();
+            }
+        }
+    }
+
+
+}
