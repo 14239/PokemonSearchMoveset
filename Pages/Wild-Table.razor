@@ -20,9 +20,13 @@
     <table>
         <thead>
             <tr>
-                <th>ID</th>
-                <th>Pokemon Name</th>
-                <th>Level</th>
+                <th @onclick="() => SortTable(nameof(OutputRow.Id))">ID</th>
+                <th @onclick="() => SortTable(nameof(OutputRow.Name))">Pokemon Name</th>
+                <th @onclick="() => SortTable(nameof(OutputRow.Level))">Level</th>
+                <th>Move1</th>
+                <th>Move2</th>
+                <th>Move3</th>
+                <th>Move4</th>
             </tr>
         </thead>
         <tbody>
@@ -32,10 +36,15 @@
                     <td>@row.Id</td>
                     <td>@row.Name</td>
                     <td>@row.Level</td>
+                    <td>@row.Move1</td>
+                    <td>@row.Move2</td>
+                    <td>@row.Move3</td>
+                    <td>@row.Move4</td>
                 </tr>
             }
         </tbody>
     </table>
+
 }
 @code {
     [Inject]
@@ -43,15 +52,60 @@
 
 
     private List<PokemonCSV> Pokemons { get; set; } = new List<PokemonCSV>();
-    private List<WildPokemon> wildPokemons { get; set; } = new List<WildPokemon>(); // 이 부분을 추가
-    private List<OutputRow> OutputTable { get; set; }
+    private List<PokemonAbilityCSV> AllPokemonAbilities { get; set; } = new List<PokemonAbilityCSV>();
+    private List<PokemonMoveCSV> AllPokemonMoves { get; set; } = new List<PokemonMoveCSV>();
+    private List<PokemonTypeCSV> PokemonTypes = new List<PokemonTypeCSV>();
+    private List<TypeNameCSV> TypeNames = new List<TypeNameCSV>();
+    public List<MoveNameCSV> MoveNames { get; set; } = new List<MoveNameCSV>();
+
+    // 필터링된 데이터를 저장할 변수를 추가합니다.
+    private List<PokemonMoveCSV> FilteredPokemonMoves { get; set; } = new List<PokemonMoveCSV>();
+
 
 
     protected override void OnInitialized()
     {
         Pokemons = dataService.Pokemons;
+        AllPokemonAbilities = dataService.AllPokemonAbilities;
+        AllPokemonMoves = dataService.AllPokemonMoves;
+        PokemonTypes = dataService.PokemonTypes;
+        TypeNames = dataService.TypeNames;
+        MoveNames = dataService.MoveNames;
+
+        FilteredPokemonMoves = AllPokemonMoves
+            .Where(pm =>
+                (pm.VersionGroupId == 25 || pm.VersionGroupId == 26) &&
+                pm.PokemonMoveMethodId == 1)
+            .ToList();
     }
 
+
+    private MoveSearch moveSearchComponent = new MoveSearch();
+    private AbilitySearch abilitySearchComponent = new AbilitySearch();
+
+
+
+
+
+
+    // 언어 변경
+    private int _previousLanguageId;
+
+    [CascadingParameter(Name = "SelectedLanguageId")]
+    public int CurrentLanguageId { get; set; }
+    public int CurrentGenerationId { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        if (_previousLanguageId != CurrentLanguageId)
+        {
+            StateHasChanged();
+            _previousLanguageId = CurrentLanguageId;
+        }
+    }
+
+    private List<WildPokemon> wildPokemons { get; set; } = new List<WildPokemon>();
+    private List<OutputRow> OutputTable { get; set; }
 
 
     private class PokemonName
@@ -65,7 +119,12 @@
         public int Id { get; set; }
         public string Name { get; set; }
         public int Level { get; set; }
+        public string Move1 { get; set; }
+        public string Move2 { get; set; }
+        public string Move3 { get; set; }
+        public string Move4 { get; set; }
     }
+
 
     public class WildPokemon
     {
@@ -139,42 +198,36 @@
 
         foreach (var wildPokemon in wildPokemons)
         {
-            // 이미 OutputTable에 해당 이름이 있다면 생략
-            if (OutputTable.Any(row => string.Equals(row.Name, wildPokemon.Name, StringComparison.OrdinalIgnoreCase)))
-                continue;
+            // 이름에서 띄어쓰기를 하이픈으로 교체
+            var formattedName = wildPokemon.Name.Replace(" ", "-").Replace("é", "e").ToLower();
 
             // 첫 줄의 이름을 추출
-            var primaryName = wildPokemon.Name.Replace("\"", "").Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None)[0];
-            Console.WriteLine($"Current Name: {primaryName}"); // 이름 출력
-
-            // 이름에서 띄어쓰기를 하이픈으로 교체
-            var formattedName = primaryName.Replace(" ", "-").Replace("é", "e").ToLower();
+            var primaryName = formattedName.Replace("\"", "").Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None)[0];
 
             // 동일한 이름을 찾는다
-            var exactMatch = Pokemons.FirstOrDefault(p => string.Equals(p.identifier, formattedName, StringComparison.OrdinalIgnoreCase));
+            var exactMatch = Pokemons.FirstOrDefault(p => string.Equals(p.identifier, primaryName, StringComparison.OrdinalIgnoreCase));
 
             var bestMatch = new PokemonCSV();
 
             // 한 줄이고 동일한 이름이 있다면 사용
             if (!wildPokemon.Name.Contains("\"") && exactMatch != null)
             {
-
                 AddOutputRow(exactMatch, wildPokemon);
-
             }
             else
             {
-                // 포맷된 이름이 포함된 후보를 찾는다
-                var candidates = Pokemons.Where(p => p.identifier.Contains(formattedName, StringComparison.OrdinalIgnoreCase)).ToList();
+                var validPokemonIds = FilteredPokemonMoves.Select(pm => pm.PokemonId).Distinct().ToList();
+
+                var candidates = Pokemons
+                    .Where(p => p.identifier.Contains(primaryName, StringComparison.OrdinalIgnoreCase) && validPokemonIds.Contains(p.Id))
+                    .ToList();
 
                 if (wildPokemon.Name.Contains("\""))
                 {
-                    // 두 줄 이름이면 후보 목록에서 가장 유사한 이름을 선택
-                    bestMatch = candidates.OrderBy(p => CalculateSimilarity(p.identifier, formattedName)).FirstOrDefault();
+                    bestMatch = candidates.OrderByDescending(p => GetMatchingCharacterCount(p.identifier, formattedName)).FirstOrDefault();
                 }
                 else
                 {
-                    // 한 줄 이름이면 후보 목록에서 가장 앞번호 이름을 선택
                     bestMatch = candidates.FirstOrDefault();
                 }
 
@@ -190,56 +243,56 @@
         }
     }
 
-
-
     private void AddOutputRow(PokemonCSV matchedPokemon, WildPokemon wildPokemon)
     {
         var levels = GetLevelsFromRange(wildPokemon.LevelRange);
 
         foreach (var level in levels)
         {
-            OutputTable.Add(new OutputRow { Id = matchedPokemon.Id, Name = wildPokemon.Name, Level = level });
+            // 이미 OutputTable에 해당 포켓몬과 레벨이 있다면 생략
+            if (OutputTable.Any(row => row.Id == matchedPokemon.Id && row.Level == level))
+                continue;
+
+            var outputRow = new OutputRow { Id = matchedPokemon.Id, Name = wildPokemon.Name, Level = level };
+
+            var possibleMoves = FilteredPokemonMoves
+                .Where(pm => pm.PokemonId == matchedPokemon.Id && pm.Level <= level)
+                .OrderByDescending(pm => pm.Level)
+                .ThenByDescending(pm => pm.Order)
+                .Take(4)
+                .ToList();
+
+            if (possibleMoves.Count > 0)
+                outputRow.Move1 = GetMoveNameById(possibleMoves[0].MoveId);
+            if (possibleMoves.Count > 1)
+                outputRow.Move2 = GetMoveNameById(possibleMoves[1].MoveId);
+            if (possibleMoves.Count > 2)
+                outputRow.Move3 = GetMoveNameById(possibleMoves[2].MoveId);
+            if (possibleMoves.Count > 3)
+                outputRow.Move4 = GetMoveNameById(possibleMoves[3].MoveId);
+
+            OutputTable.Add(outputRow);
         }
     }
 
 
 
-    private int CalculateLevenshteinDistance(string source, string target)
+    private int GetMatchingCharacterCount(string source, string target)
     {
-        int n = source.Length;
-        int m = target.Length;
-        int[,] d = new int[n + 1, m + 1];
-
-        if (n == 0) return m;
-        if (m == 0) return n;
-
-        for (int i = 0; i <= n; d[i, 0] = i++) { }
-        for (int j = 0; j <= m; d[0, j] = j++) { }
-
-        for (int i = 1; i <= n; i++)
+        int count = 0;
+        foreach (var character in source)
         {
-            for (int j = 1; j <= m; j++)
+            if (target.Contains(character))
             {
-                int cost = (target[j - 1] == source[i - 1]) ? 0 : 1;
-
-                d[i, j] = Math.Min(
-                    Math.Min(d[i - 1, j] + 1, d[i, j - 1] + 1),
-                    d[i - 1, j - 1] + cost);
+                count++;
+                target = target.Remove(target.IndexOf(character), 1); // 일치하는 첫 번째 문자를 제거
             }
         }
-        return d[n, m];
+        return count;
     }
 
-    private double CalculateSimilarity(string source, string target)
-    {
-        source = source.Replace("\n", "").Replace(" ", "");
-        target = target.Replace("\n", "").Replace(" ", "");
 
-        int maxLength = Math.Max(source.Length, target.Length);
-        if (maxLength == 0) return 1.0;
 
-        return (1.0 - ((double)CalculateLevenshteinDistance(source, target) / maxLength));
-    }
 
 
     private IEnumerable<int> GetLevelsFromRange(string range)
@@ -253,8 +306,14 @@
             if (parts.Length != 2)
                 return Enumerable.Empty<int>();
 
-            var start = int.Parse(parts[0]);
-            var end = int.Parse(parts[1]);
+            var start = int.Parse(parts[0].Replace("\"", ""));
+            var end = int.Parse(parts[1].Replace("\"", ""));
+
+
+            // 'end' 값이 'start' 값보다 작거나 같은 경우 처리
+            if (end <= start)
+                return Enumerable.Empty<int>();
+
             return Enumerable.Range(start, end - start + 1);
         }
         else
@@ -269,6 +328,44 @@
             {
                 return Enumerable.Empty<int>();
             }
+        }
+    }
+
+
+    public string GetMoveNameById(int moveId)
+    {
+        var matchingMoveName = MoveNames.FirstOrDefault(mn => mn.MoveId == moveId && mn.LocalLanguageId == CurrentLanguageId);
+        return matchingMoveName?.Name ?? $"Move {moveId}";
+    }
+
+
+
+    private bool sortAscending = true;
+    private string currentSortingColumn = "";
+
+    private void SortTable(string columnName)
+    {
+        if (columnName == currentSortingColumn)
+        {
+            sortAscending = !sortAscending;
+        }
+        else
+        {
+            currentSortingColumn = columnName;
+            sortAscending = true;
+        }
+
+        if (columnName == nameof(OutputRow.Id))
+        {
+            OutputTable = sortAscending ? OutputTable.OrderBy(r => r.Id).ToList() : OutputTable.OrderByDescending(r => r.Id).ToList();
+        }
+        else if (columnName == nameof(OutputRow.Name))
+        {
+            OutputTable = sortAscending ? OutputTable.OrderBy(r => r.Name).ToList() : OutputTable.OrderByDescending(r => r.Name).ToList();
+        }
+        else if (columnName == nameof(OutputRow.Level))
+        {
+            OutputTable = sortAscending ? OutputTable.OrderBy(r => r.Level).ToList() : OutputTable.OrderByDescending(r => r.Level).ToList();
         }
     }
 
