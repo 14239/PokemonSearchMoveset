@@ -37,7 +37,7 @@ else
         StateHasChanged(); // UI 갱신 요청
     }
 
-    // 컴포넌트가 파기될 때 이벤트 구독 해제
+    // 컴포넌트가 파기될 때 이벤트 구독 해제 
     public void Dispose()
     {
         DataService.OnDataLoadProgress -= UpdateUI;
