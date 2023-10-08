@@ -23,6 +23,9 @@
                 <th @onclick="() => SortTable(nameof(OutputRow.Id))">ID</th>
                 <th @onclick="() => SortTable(nameof(OutputRow.Name))">Pokemon Name</th>
                 <th @onclick="() => SortTable(nameof(OutputRow.Level))">Level</th>
+                <th>Ability1</th>
+                <th>Ability2</th>
+                <th>Hidden Ability</th>
                 <th>Move1</th>
                 <th>Move2</th>
                 <th>Move3</th>
@@ -32,10 +35,14 @@
         <tbody>
             @foreach (var row in OutputTable)
             {
+
                 <tr>
                     <td>@row.Id</td>
                     <td>@row.Name</td>
                     <td>@row.Level</td>
+                    <td>@row.Ability1</td>
+                    <td>@row.Ability2</td>
+                    <td>@row.Ability3</td>
                     <td>@row.Move1</td>
                     <td>@row.Move2</td>
                     <td>@row.Move3</td>
@@ -53,6 +60,7 @@
 
     private List<PokemonCSV> Pokemons { get; set; } = new List<PokemonCSV>();
     private List<PokemonAbilityCSV> AllPokemonAbilities { get; set; } = new List<PokemonAbilityCSV>();
+    private List<AbilityNameCSV> AbilityNames { get; set; } = new List<AbilityNameCSV>();
     private List<PokemonMoveCSV> AllPokemonMoves { get; set; } = new List<PokemonMoveCSV>();
     private List<PokemonTypeCSV> PokemonTypes = new List<PokemonTypeCSV>();
     private List<TypeNameCSV> TypeNames = new List<TypeNameCSV>();
@@ -71,6 +79,7 @@
         PokemonTypes = dataService.PokemonTypes;
         TypeNames = dataService.TypeNames;
         MoveNames = dataService.MoveNames;
+        AbilityNames = dataService.AbilityNames;
 
         FilteredPokemonMoves = AllPokemonMoves
             .Where(pm =>
@@ -119,6 +128,9 @@
         public int Id { get; set; }
         public string Name { get; set; }
         public int Level { get; set; }
+        public string Ability1 { get; set; }
+        public string Ability2 { get; set; }
+        public string Ability3 { get; set; }
         public string Move1 { get; set; }
         public string Move2 { get; set; }
         public string Move3 { get; set; }
@@ -262,6 +274,13 @@
                 .Take(4)
                 .ToList();
 
+            var abilities = GetAbilityNamesByPokemonId(matchedPokemon.Id);
+            outputRow.Ability1 = abilities.Item1;
+            outputRow.Ability2 = abilities.Item2;
+            outputRow.Ability3 = abilities.Item3;
+
+
+
             if (possibleMoves.Count > 0)
                 outputRow.Move1 = GetMoveNameById(possibleMoves[0].MoveId);
             if (possibleMoves.Count > 1)
@@ -338,7 +357,33 @@
         return matchingMoveName?.Name ?? $"Move {moveId}";
     }
 
+    public string GetAbilityNameById(int abilityId)
+    {
+        if (abilityId != -1)
+        {
+            var matchingAbilityName = AbilityNames.FirstOrDefault(mn => mn.AbilityId == abilityId && mn.LocalLanguageId == CurrentLanguageId);
+            return matchingAbilityName?.Name ?? $"Ability {abilityId}";
 
+        }
+        else
+        {
+            return "";
+        }
+
+
+
+    }
+
+    public (string Ability1, string Ability2, string HiddenAbility) GetAbilityNamesByPokemonId(int pokemonId)
+    {
+        var abilities = AllPokemonAbilities.Where(pa => pa.PokemonId == pokemonId).ToList();
+
+        string ability1 = GetAbilityNameById(abilities.FirstOrDefault(a => a.Slot == 1)?.AbilityId ?? -1);
+        string ability2 = GetAbilityNameById(abilities.FirstOrDefault(a => a.Slot == 2)?.AbilityId ?? -1);
+        string hiddenAbility = GetAbilityNameById(abilities.FirstOrDefault(a => a.Slot == 3)?.AbilityId ?? -1);
+
+        return (ability1, ability2, hiddenAbility);
+    }
 
     private bool sortAscending = true;
     private string currentSortingColumn = "";
