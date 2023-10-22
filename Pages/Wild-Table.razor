@@ -13,6 +13,11 @@
 
 <InputFile OnChange="LoadCsvData" />
 
+<label>
+    <input type="checkbox" @bind="DisplayAsInt"> Display values as int
+</label>
+
+
 <button @onclick="GenerateOutput">Generate Output Table</button>
 
 @if (OutputTable != null)
@@ -255,6 +260,9 @@
         }
     }
 
+    private bool DisplayAsInt { get; set; }
+
+
     private void AddOutputRow(PokemonCSV matchedPokemon, WildPokemon wildPokemon)
     {
         var levels = GetLevelsFromRange(wildPokemon.LevelRange);
@@ -281,14 +289,31 @@
 
 
 
-            if (possibleMoves.Count > 0)
-                outputRow.Move1 = GetMoveNameById(possibleMoves[0].MoveId);
-            if (possibleMoves.Count > 1)
-                outputRow.Move2 = GetMoveNameById(possibleMoves[1].MoveId);
-            if (possibleMoves.Count > 2)
-                outputRow.Move3 = GetMoveNameById(possibleMoves[2].MoveId);
-            if (possibleMoves.Count > 3)
-                outputRow.Move4 = GetMoveNameById(possibleMoves[3].MoveId);
+            if(DisplayAsInt)
+            {
+                if (possibleMoves.Count > 0)
+                    outputRow.Move1 = possibleMoves[0].MoveId.ToString();
+                if (possibleMoves.Count > 1)
+                    outputRow.Move2 = possibleMoves[1].MoveId.ToString();
+                if (possibleMoves.Count > 2)
+                    outputRow.Move3 = possibleMoves[2].MoveId.ToString();
+                if (possibleMoves.Count > 3)
+                    outputRow.Move4 = possibleMoves[3].MoveId.ToString();
+
+            }
+            else
+            {
+                if (possibleMoves.Count > 0)
+                    outputRow.Move1 = GetMoveNameById(possibleMoves[0].MoveId);
+                if (possibleMoves.Count > 1)
+                    outputRow.Move2 = GetMoveNameById(possibleMoves[1].MoveId);
+                if (possibleMoves.Count > 2)
+                    outputRow.Move3 = GetMoveNameById(possibleMoves[2].MoveId);
+                if (possibleMoves.Count > 3)
+                    outputRow.Move4 = GetMoveNameById(possibleMoves[3].MoveId);
+
+            }
+
 
             OutputTable.Add(outputRow);
         }
@@ -377,11 +402,25 @@
     public (string Ability1, string Ability2, string HiddenAbility) GetAbilityNamesByPokemonId(int pokemonId)
     {
         var abilities = AllPokemonAbilities.Where(pa => pa.PokemonId == pokemonId).ToList();
+        string ability1 = "";
+        string ability2 = "";
+        string hiddenAbility = "";
 
-        string ability1 = GetAbilityNameById(abilities.FirstOrDefault(a => a.Slot == 1)?.AbilityId ?? -1);
-        string ability2 = GetAbilityNameById(abilities.FirstOrDefault(a => a.Slot == 2)?.AbilityId ?? -1);
-        string hiddenAbility = GetAbilityNameById(abilities.FirstOrDefault(a => a.Slot == 3)?.AbilityId ?? -1);
 
+        if (DisplayAsInt)
+        {
+            ability1 = (abilities.FirstOrDefault(a => a.Slot == 1)?.AbilityId ?? -1).ToString();
+            ability2 = (abilities.FirstOrDefault(a => a.Slot == 2)?.AbilityId ?? -1).ToString();
+            hiddenAbility = (abilities.FirstOrDefault(a => a.Slot == 3)?.AbilityId ?? -1).ToString();
+
+        }
+        else
+        {
+            ability1 = GetAbilityNameById(abilities.FirstOrDefault(a => a.Slot == 1)?.AbilityId ?? -1);
+            ability2 = GetAbilityNameById(abilities.FirstOrDefault(a => a.Slot == 2)?.AbilityId ?? -1);
+            hiddenAbility = GetAbilityNameById(abilities.FirstOrDefault(a => a.Slot == 3)?.AbilityId ?? -1);
+
+        }
         return (ability1, ability2, hiddenAbility);
     }
 

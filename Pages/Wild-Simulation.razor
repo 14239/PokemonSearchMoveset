@@ -1,0 +1,219 @@
+﻿@page "/wild-simulation"
+
+@using Microsoft.AspNetCore.Components.Forms
+@using PokemonSearchMoveset.Models
+@using PokemonSearchMoveset.Services
+@using Microsoft.JSInterop
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@using PokemonSearchMoveset.Components
+@inject DataService DataService
+@using System.Globalization
+@using System.IO
+
+
+@* <input type="file" @onchange="LoadCsvData" />
+
+@if (resultData != null)
+{
+    foreach (var pokemon in resultData)
+    {
+        <div>
+            <span>@pokemon.Name (@pokemon.Level)</span>
+            <span>Count: @pokemon.Log.AccumulatedPokemonCount</span> <!-- 수정된 부분 -->
+            @if (pokemon.i)
+            {
+                <span>@pokemon.CounterPokemon</span>
+                <button @onclick="()=>ShowLog(pokemon)">상세보기</button>
+            }
+            else
+            {
+                <span>불가능</span>
+            }
+        </div>
+    }
+} *@
+
+@if (selectedPokemon != null)
+{
+    <!-- 상세 정보 팝업 -->
+    <div class="modal">
+        <h3>@selectedPokemon.Name</h3>
+        <p>Level: @selectedPokemon.Level</p>
+        <p>Logs:</p>
+        <ul>
+            @foreach (var log in selectedPokemon.Log.TurnActions)
+            {
+                <li>@log</li>
+            }
+        </ul>
+        <!-- ... 다른 세부 정보 ... -->
+        <button @onclick="CloseModal">닫기</button>
+    </div>
+}
+
+@code {
+    [Inject]
+    private DataService dataService { get; set; }
+
+
+    private List<PokemonCSV> Pokemons { get; set; } = new List<PokemonCSV>();
+    private List<PokemonAbilityCSV> AllPokemonAbilities { get; set; } = new List<PokemonAbilityCSV>();
+    private List<AbilityNameCSV> AbilityNames { get; set; } = new List<AbilityNameCSV>();
+    private List<PokemonMoveCSV> AllPokemonMoves { get; set; } = new List<PokemonMoveCSV>();
+    private List<PokemonTypeCSV> PokemonTypes = new List<PokemonTypeCSV>();
+    private List<TypeNameCSV> TypeNames = new List<TypeNameCSV>();
+    public List<MoveNameCSV> MoveNames { get; set; } = new List<MoveNameCSV>();
+
+    // 필터링된 데이터를 저장할 변수를 추가합니다.
+    private List<PokemonMoveCSV> FilteredPokemonMoves { get; set; } = new List<PokemonMoveCSV>();
+
+
+
+    protected override void OnInitialized()
+    {
+        Pokemons = dataService.Pokemons;
+        AllPokemonAbilities = dataService.AllPokemonAbilities;
+        AllPokemonMoves = dataService.AllPokemonMoves;
+        PokemonTypes = dataService.PokemonTypes;
+        TypeNames = dataService.TypeNames;
+        MoveNames = dataService.MoveNames;
+        AbilityNames = dataService.AbilityNames;
+
+        FilteredPokemonMoves = AllPokemonMoves
+            .Where(pm =>
+                (pm.VersionGroupId == 25 || pm.VersionGroupId == 26) &&
+                pm.PokemonMoveMethodId == 1)
+            .ToList();
+    }
+
+
+    // 언어 변경
+    private int _previousLanguageId;
+
+    [CascadingParameter(Name = "SelectedLanguageId")]
+    public int CurrentLanguageId { get; set; }
+    public int CurrentGenerationId { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        if (_previousLanguageId != CurrentLanguageId)
+        {
+            StateHasChanged();
+            _previousLanguageId = CurrentLanguageId;
+        }
+    }
+
+
+    private List<WildPokemon> resultData = null;
+    private WildPokemon selectedPokemon = null;
+
+    public class PokemonLog
+    {
+        public List<string> TurnActions { get; set; } = new List<string>(); // 각 턴의 행동
+        public int AccumulatedPokemonCount { get; set; } = 0; // 누적 포켓몬 사용 수
+        public int SpecialActionCount { get; set; } = 0; // 특수 대처 횟수
+
+        public void AddTurnAction(string action)
+        {
+            TurnActions.Add(action);
+        }
+
+        public void IncrementPokemonCount()
+        {
+            AccumulatedPokemonCount++;
+        }
+
+        public void IncrementSpecialActionCount()
+        {
+            SpecialActionCount++;
+        }
+    }
+
+    private class WildPokemon // 레벨, 특성으로 분류함
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public int Level { get; set; }
+        public int Ability { get; set; }
+        public int Move1 { get; set; }
+        public int Move2 { get; set; }
+        public int Move3 { get; set; }
+        public int Move4 { get; set; }
+        public PokemonLog Log { get; set; } = new PokemonLog(); // 로그 객체 포함
+
+    }
+    
+    private List<WildPokemon> wildPokemons { get; set; } = new List<WildPokemon>();
+
+    private async Task LoadCsvData(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+
+        if (file != null)
+        {
+            var stream = file.OpenReadStream();
+            using var reader = new StreamReader(stream);
+            var csvData = await reader.ReadToEndAsync();
+
+            wildPokemons = ParseInputData(csvData);
+        }
+    }
+
+
+
+    private List<WildPokemon> ParseInputData(string csvData)
+    {
+        var lines = csvData.Split('\n').Skip(1).Where(line => !string.IsNullOrWhiteSpace(line)); // 첫 번째 행은 헤더이므로 생략하고 빈 행은 필터링
+        var result = new List<WildPokemon>();
+
+        foreach (var line in lines)
+        {
+            var values = line.Split(',').Select(val => val.Trim()).ToArray(); // 쉼표로 구분하고 공백 제거
+
+            var wildPokemonForAbility1 = new WildPokemon
+                {
+                    Id = int.Parse(values[0]),
+                    Name = values[1],
+                    Level = int.Parse(values[2]),
+                    Ability = int.Parse(values[3]),
+                    Move1 = string.IsNullOrEmpty(values[6]) ? -1 : int.Parse(values[6]),
+                    Move2 = string.IsNullOrEmpty(values[7]) ? -1 : int.Parse(values[7]),
+                    Move3 = string.IsNullOrEmpty(values[8]) ? -1 : int.Parse(values[8]),
+                    Move4 = string.IsNullOrEmpty(values[9]) ? -1 : int.Parse(values[9])
+                };
+            result.Add(wildPokemonForAbility1);
+
+            // Ability2 값이 -1이 아닐 경우 별도의 포켓몬 객체로 추가
+            if (values[4] != "-1")
+            {
+                var wildPokemonForAbility2 = new WildPokemon
+                    {
+                        Id = wildPokemonForAbility1.Id,
+                        Name = wildPokemonForAbility1.Name,
+                        Level = wildPokemonForAbility1.Level,
+                        Ability = int.Parse(values[4]),
+                        Move1 = wildPokemonForAbility1.Move1,
+                        Move2 = wildPokemonForAbility1.Move2,
+                        Move3 = wildPokemonForAbility1.Move3,
+                        Move4 = wildPokemonForAbility1.Move4
+                    };
+                result.Add(wildPokemonForAbility2);
+            }
+        }
+
+        return result;
+    }
+
+    private void ShowLog(WildPokemon pokemon)
+    {
+        selectedPokemon = pokemon;
+    }
+
+    private void CloseModal()
+    {
+        selectedPokemon = null;
+    }
+
+
+}
