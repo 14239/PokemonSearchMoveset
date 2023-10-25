@@ -1,6 +1,4 @@
-﻿using CsvHelper;
-using CsvHelper.Configuration;
-using PokemonSearchMoveset.Models;
+﻿using PokemonSearchMoveset.Models;
 using System.Collections.Generic;
 using System.Formats.Asn1;
 using System.Globalization;
@@ -102,11 +100,15 @@ namespace PokemonSearchMoveset.Services
         public static async Task<List<PokemonMoveCSV>> LoadPokemonMoves(HttpClient http, string path)
         {
             var csvData = await http.GetStringAsync(path);
-            using var reader = new StringReader(csvData);
-            using var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture) { HasHeaderRecord = true });
-
-            var records = csv.GetRecords<PokemonMoveCSV>();
-            return records.ToList();
+            return ParseCsvData(csvData, tokens => new PokemonMoveCSV
+            {
+                PokemonId = int.Parse(tokens[0]),
+                VersionGroupId = int.Parse(tokens[1]),
+                MoveId = int.Parse(tokens[2]),
+                PokemonMoveMethodId = int.Parse(tokens[3]),
+                Level = int.Parse(tokens[4]),
+                Order = int.TryParse(tokens[5], out var orderValue) ? orderValue : 0
+            });
         }
 
         public static async Task<List<MoveCSV>> LoadMoves(HttpClient http, string path)
