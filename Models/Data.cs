@@ -1,4 +1,10 @@
-﻿namespace PokemonSearchMoveset.Models
+﻿using CsvHelper;
+using CsvHelper.Configuration;
+using CsvHelper.Configuration.Attributes;
+using System.Globalization;
+using System.IO;
+
+namespace PokemonSearchMoveset.Models
 {
     // 언어, 국가 세팅
 
@@ -35,10 +41,10 @@
 
         public int SpeciesId { get; set; }
 
-        public int order { get; set;}               // 모든 폼 포함 순서. 검색할 때 보여줄 순서임
+        public int order { get; set; }               // 모든 폼 포함 순서. 검색할 때 보여줄 순서임
 
         public bool isDefault { get; set; }         // 기본 폼인지 여부
-        
+
 
     }
 
@@ -71,15 +77,27 @@
 
     }
 
-    public class PokemonMoveCSV // (pokemon_moves.csv)
+    public class PokemonMoveCSV
     {
+        [Index(0)]
         public int PokemonId { get; set; }
+
+        [Index(1)]
         public int VersionGroupId { get; set; }
+
+        [Index(2)]
         public int MoveId { get; set; }
+
+        [Index(3)]
         public int PokemonMoveMethodId { get; set; }
+
+        [Index(4)]
         public int Level { get; set; }
-        public int Order { get; set; }
+
+        [Index(5)]
+        public int? Order { get; set; }  // changed to nullable int
     }
+
 
 
     // 기술세팅
@@ -91,7 +109,7 @@
         public int GenerationId { get; set; }
         public int TypeId { get; set; }
         public int? Power { get; set; } // nullable because some moves might not have power
-        public  int? Pp { get; set; }
+        public int? Pp { get; set; }
         public int? Accuracy { get; set; }
         public int Priority { get; set; }
         public int TargetId { get; set; }
