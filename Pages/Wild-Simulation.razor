@@ -213,10 +213,10 @@
                     Type1 = values[3],
                     Type2 = values[4],
                     Ability = int.Parse(values[5]),
-                    Move1 = string.IsNullOrEmpty(values[7]) ? -1 : int.Parse(values[7]),
-                    Move2 = string.IsNullOrEmpty(values[8]) ? -1 : int.Parse(values[8]),
-                    Move3 = string.IsNullOrEmpty(values[9]) ? -1 : int.Parse(values[9]),
-                    Move4 = string.IsNullOrEmpty(values[10]) ? -1 : int.Parse(values[10])
+                    Move1 = string.IsNullOrEmpty(values[8]) ? -1 : int.Parse(values[8]),
+                    Move2 = string.IsNullOrEmpty(values[9]) ? -1 : int.Parse(values[9]),
+                    Move3 = string.IsNullOrEmpty(values[10]) ? -1 : int.Parse(values[10]),
+                    Move4 = string.IsNullOrEmpty(values[11]) ? -1 : int.Parse(values[11])
                 };
             result.Add(wildPokemonForAbility1);
 
@@ -228,6 +228,8 @@
                         Id = wildPokemonForAbility1.Id,
                         Name = wildPokemonForAbility1.Name,
                         Level = wildPokemonForAbility1.Level,
+                        Type1 = values[3],
+                        Type2 = values[4],
                         Ability = int.Parse(values[6]),
                         Move1 = wildPokemonForAbility1.Move1,
                         Move2 = wildPokemonForAbility1.Move2,
