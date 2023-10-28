@@ -236,3 +236,145 @@ a, .btn-link {
     border-radius: 5px;
     z-index: 1000; /* Display above other elements */
 }
+
+
+/* 플로우차트 */
+
+.flow-chart-wrapper {
+    width: 1600px;
+    height: 900px;
+    overflow: hidden;
+    border: 1px solid black;
+    position: relative;
+}
+
+.flow-chart {
+    z-index: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    flex-direction: column;
+    transform-origin: 0 0;
+    transition: transform 0.3s ease-out;
+    position: relative;
+}
+
+
+.start {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    position: absolute;
+    width: 100px;
+    height: 40px;
+    background-color: lightgray;
+    border: 2px solid black;
+    text-align: center;
+    line-height: 40px;
+}
+
+.node {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    position: absolute;
+    padding: 10px;
+    margin: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.decision-wrapper {
+    position: relative;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.decision {
+    transform: rotate(157.5deg) skewX(45deg) scaleY(0.707);
+    background: #CCC;
+    width: 100px;
+    height: 100px;
+    display: inline-block;
+    border: 2px solid #000;
+}
+
+.decision-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    width: 100%;
+    line-height: normal;
+}
+
+
+
+.action {
+    width: 120px;
+    height: 60px;
+    background-color: lightgray;
+    border: 2px solid black;
+}
+
+
+.line {
+    position: absolute;
+    background-color: lightgray;
+    border-right: 2px solid black;
+    z-index: -1;
+    width: 2px;
+}
+
+
+.children {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: row;
+}
+
+@property --x {
+    syntax: '<percentage>';
+    inherits: false;
+    initial-value: 0%;
+}
+
+@property --y {
+    syntax: '<percentage>';
+    inherits: false;
+    initial-value: 10%;
+}
+
+.highlighted {
+    --x: -25%;
+    --y: -10%;
+    border-image-slice: 1;
+    border-image-source: linear-gradient(to bottom, black calc(var(--x) - 10%), red var(--x) var(--y), black calc(var(--y) + 10%));
+    animation: moveGradient 5s linear infinite;
+}
+
+.highlighted-decision {
+    --x: -25%;
+    --y: -10%;
+    border-image-slice: 1;
+    border-image-source: linear-gradient(to top right, black calc(var(--x) - 10%), red var(--x) var(--y), black calc(var(--y) + 10%));
+    animation: moveGradient 5s linear infinite;
+}
+
+
+@keyframes moveGradient {
+    0% {
+        --x: -25%;
+        --y: -10%;
+    }
+
+    100% {
+        --x: 110%;
+        --y: 125%;
+    }
+}

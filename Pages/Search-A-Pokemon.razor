@@ -251,8 +251,6 @@
 	}
 
 
-
-
 	public int GetSpeciesIdById(int Id)
 	{
 		return Pokemons.FirstOrDefault(p => p.Id == Id)?.SpeciesId ?? 0;
@@ -372,7 +370,26 @@
 		PokemonInfoLayerRef.Show(pokemonId, GetPokemonNameById(pokemonId), types.Item1, types.Item2, abilities.Item1, abilities.Item2, abilities.Item3);
 	}
 
+	// 테스트용
+	private string inputText;
+	private List<string> results;
 
+	private void LookupMoves()
+	{
+		var moveNames = inputText.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+		results = new List<string>();
+		foreach (var moveName in moveNames)
+		{
+			var moveId = GetMoveIdByName(moveName);
+			results.Add(moveId?.ToString() ?? moveName);
+		}
+	}
+
+	public int? GetMoveIdByName(string moveName)
+	{
+		var matchingMove = moveSearchComponent.MoveNames.FirstOrDefault(mn => mn.Name.Equals(moveName, StringComparison.OrdinalIgnoreCase) && mn.LocalLanguageId == CurrentLanguageId);
+		return matchingMove?.MoveId;
+	}
 
 
 }
@@ -524,6 +541,24 @@ else
 		<p>검색 결과가 없습니다.</p>
 	</div>
 }
+
+<h3>Move Lookup</h3>
+
+<textarea @bind="inputText" placeholder="Enter move names, one per line..." rows="10" cols="50"></textarea>
+<br />
+<button @onclick="LookupMoves">Lookup</button>
+
+@if (results != null)
+{
+	<h5>Results:</h5>
+	<ul>
+		@foreach (var result in results)
+		{
+			<li>@result</li>
+		}
+	</ul>
+}
+
 
 
 <PokemonInfoLayer CurrentLanguageId="@CurrentLanguageId"

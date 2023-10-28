@@ -12,27 +12,55 @@
 @using System.IO
 
 
-@* <input type="file" @onchange="LoadCsvData" />
+<InputFile OnChange="LoadCsvData" />
 
-@if (resultData != null)
+<MudButton OnClick="GenerateOutputTable">표 생성하기</MudButton>
+
+@if (wildPokemons != null && wildPokemons.Count > 0)
 {
-    foreach (var pokemon in resultData)
-    {
-        <div>
-            <span>@pokemon.Name (@pokemon.Level)</span>
-            <span>Count: @pokemon.Log.AccumulatedPokemonCount</span> <!-- 수정된 부분 -->
-            @if (pokemon.i)
-            {
-                <span>@pokemon.CounterPokemon</span>
-                <button @onclick="()=>ShowLog(pokemon)">상세보기</button>
-            }
-            else
-            {
-                <span>불가능</span>
-            }
-        </div>
-    }
-} *@
+    <MudTable Items="@wildPokemons" Dense="@dense" Hover="@hover" Bordered="@bordered" Striped="@striped" RowsPerPage="10" Breakpoint="Breakpoint.Sm">
+        <ToolBarContent>
+            <MudText Typo="Typo.h6">Wild Pokemons</MudText>
+            <MudSpacer />
+            <MudTextField @bind-Value="searchString" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+        </ToolBarContent>
+        <HeaderContent>
+            <MudTh>User ID</MudTh>
+            <MudTh>Name</MudTh>
+            <MudTh>Level</MudTh>
+            <MudTh>Type1</MudTh>
+            <MudTh>Type2</MudTh>
+            <MudTh>Ability</MudTh>
+            <MudTh>Move1</MudTh>
+            <MudTh>Move2</MudTh>
+            <MudTh>Move3</MudTh>
+            <MudTh>Move4</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="ID">@context.Id</MudTd>
+            <MudTd DataLabel="Name">@context.Name</MudTd>
+            <MudTd DataLabel="Level">@context.Level</MudTd>
+            <MudTd DataLabel="Type1">@context.Type1</MudTd>
+            <MudTd DataLabel="Type2">@context.Type2</MudTd>
+            <MudTd DataLabel="Ability">@context.Ability</MudTd>
+            <MudTd DataLabel="Move1">@context.Move1</MudTd>
+            <MudTd DataLabel="Move2">@context.Move2</MudTd>
+            <MudTd DataLabel="Move3">@context.Move3</MudTd>
+            <MudTd DataLabel="Move4">@context.Move4</MudTd>
+            <MudTd><MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small" @onclick="(() => ShowLog(context))">Show Log</MudButton></MudTd>
+        </RowTemplate>
+        <PagerContent>
+            <MudTablePager />
+        </PagerContent>
+    </MudTable>
+
+    <div class="d-flex flex-wrap mt-4">
+        <MudSwitch @bind-Checked="@hover" Color="Color.Primary">Hover</MudSwitch>
+        <MudSwitch @bind-Checked="@dense" Color="Color.Secondary">Dense</MudSwitch>
+        <MudSwitch @bind-Checked="@striped" Color="Color.Tertiary">Striped</MudSwitch>
+        <MudSwitch @bind-Checked="@bordered" Color="Color.Warning">Bordered</MudSwitch>
+    </div>
+}
 
 @if (selectedPokemon != null)
 {
@@ -105,8 +133,6 @@
     }
 
 
-    private List<WildPokemon> resultData = null;
-    private WildPokemon selectedPokemon = null;
 
     public class PokemonLog
     {
@@ -135,6 +161,8 @@
         public int Id { get; set; }
         public string Name { get; set; }
         public int Level { get; set; }
+        public string Type1 { get; set; }
+        public string Type2 { get; set; }
         public int Ability { get; set; }
         public int Move1 { get; set; }
         public int Move2 { get; set; }
@@ -162,6 +190,12 @@
 
 
 
+    private void GenerateOutputTable()
+    {
+        // 표를 생성하는 코드 여기에 작성
+        // 예: wildPokemons 리스트를 필터링 또는 정렬
+    }
+
     private List<WildPokemon> ParseInputData(string csvData)
     {
         var lines = csvData.Split('\n').Skip(1).Where(line => !string.IsNullOrWhiteSpace(line)); // 첫 번째 행은 헤더이므로 생략하고 빈 행은 필터링
@@ -176,23 +210,25 @@
                     Id = int.Parse(values[0]),
                     Name = values[1],
                     Level = int.Parse(values[2]),
-                    Ability = int.Parse(values[3]),
-                    Move1 = string.IsNullOrEmpty(values[6]) ? -1 : int.Parse(values[6]),
-                    Move2 = string.IsNullOrEmpty(values[7]) ? -1 : int.Parse(values[7]),
-                    Move3 = string.IsNullOrEmpty(values[8]) ? -1 : int.Parse(values[8]),
-                    Move4 = string.IsNullOrEmpty(values[9]) ? -1 : int.Parse(values[9])
+                    Type1 = values[3],
+                    Type2 = values[4],
+                    Ability = int.Parse(values[5]),
+                    Move1 = string.IsNullOrEmpty(values[7]) ? -1 : int.Parse(values[7]),
+                    Move2 = string.IsNullOrEmpty(values[8]) ? -1 : int.Parse(values[8]),
+                    Move3 = string.IsNullOrEmpty(values[9]) ? -1 : int.Parse(values[9]),
+                    Move4 = string.IsNullOrEmpty(values[10]) ? -1 : int.Parse(values[10])
                 };
             result.Add(wildPokemonForAbility1);
 
             // Ability2 값이 -1이 아닐 경우 별도의 포켓몬 객체로 추가
-            if (values[4] != "-1")
+            if (values[6] != "-1")
             {
                 var wildPokemonForAbility2 = new WildPokemon
                     {
                         Id = wildPokemonForAbility1.Id,
                         Name = wildPokemonForAbility1.Name,
                         Level = wildPokemonForAbility1.Level,
-                        Ability = int.Parse(values[4]),
+                        Ability = int.Parse(values[6]),
                         Move1 = wildPokemonForAbility1.Move1,
                         Move2 = wildPokemonForAbility1.Move2,
                         Move3 = wildPokemonForAbility1.Move3,
@@ -204,12 +240,28 @@
 
         return result;
     }
+    private bool dense = false;
+    private bool hover = true;
+    private bool striped = false;
+    private bool bordered = true;
+    private string searchString = "";
+    private WildPokemon selectedPokemon = null;
+    private bool _selectOnRowClick = true;
+    private int rowsPerPage = 10;  // 초기 페이지당 행 수
+
+    private bool FilterFunc(WildPokemon pokemon)
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+        if (pokemon.Name.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        return false;
+    }
 
     private void ShowLog(WildPokemon pokemon)
     {
-        selectedPokemon = pokemon;
+        // 로그 표시 코드
     }
-
     private void CloseModal()
     {
         selectedPokemon = null;

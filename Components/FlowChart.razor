@@ -5,168 +5,179 @@
 
 
 <div class="flow-chart-wrapper">
-    <div class="flow-chart">
-        @RenderAllNodes()
-        @RenderAllArrows()
-    </div>
+	<div class="flow-chart">
+		@RenderAllNodes()
+		@RenderAllArrows()
+	</div>
 </div>
 
-
 @code {
-    
-    
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            await JSRuntime.InvokeVoidAsync("initFlowChart");
-        }
-    }
-
-    private MarkupString RenderNode(FlowNode node)
-    {
-        if (node == null) return new MarkupString("");
-
-        StringBuilder contentBuilder = new StringBuilder();
-        string highlightedClass = node.IsHighlighted ? "highlighted" : "";
-
-        string nodeContent = node.Type switch
-        {
-            NodeType.Start => $"<div class='node start {highlightedClass}' style='left: {node.GetAbsoluteX()}px; top: {node.GetAbsoluteY()}px;'>{node.Content}</div>",
-            NodeType.Decision => $"<div class='node decision-container {highlightedClass}' style='left: {node.GetAbsoluteX()}px; top: {node.GetAbsoluteY()}px;'><div class='decision'></div><div class='decision-content'>{node.Content}</div></div>",
-            NodeType.Action => $"<div class='node action {highlightedClass}' style='left: {node.GetAbsoluteX()}px; top: {node.GetAbsoluteY()}px;'>{node.Content}</div>",
-            NodeType.Direction => $"<div class='node direction {highlightedClass}' style='left: {node.GetAbsoluteX()}px; top: {node.GetAbsoluteY()}px;'></div>",
-            _ => ""
-        };
-
-        contentBuilder.Append(nodeContent);
-        return new MarkupString(contentBuilder.ToString());
-    }
 
 
-    List<FlowNode> allNodes = new List<FlowNode>();
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender)
+		{
+			await JSRuntime.InvokeVoidAsync("initFlowChart");
+		}
+	}
 
-    private MarkupString RenderAllNodes()
-    {
-        StringBuilder allNodeContent = new StringBuilder();
+	private MarkupString RenderNode(FlowNode node)
+	{
+		if (node == null) return new MarkupString("");
 
-        foreach (var node in allNodes)
-        {
-            allNodeContent.Append(RenderNode(node).ToString());
-        }
+		StringBuilder contentBuilder = new StringBuilder();
+		string highlightedClass = "";
 
-        return new MarkupString(allNodeContent.ToString());
-    }
+		if (node.Type == NodeType.Decision)
+		{
+			highlightedClass = node.IsHighlighted ? "highlighted-decision" : "";
 
-    protected override void OnInitialized()
-    {
-        CreateFlowChartExample();
-    }
+		}
+		else
+		{
+			highlightedClass = node.IsHighlighted ? "highlighted" : "";
 
-        
-    public void CreateFlowChartExample()
-    {
-        FlowNode startNode = new FlowNode
-            {
-                Type = NodeType.Start,
-                Content = "Start",
-                X = 800,
-                Y = 100
-            };
-        allNodes.Add(startNode);
+		}
 
-        // 결정 노드 생성
-        FlowNode decisionNode1 = new FlowNode
-            {
-                Type = NodeType.Decision,
-                Content = "is it Pikachu?",
-                X = 0,
-                Y = 100,
-                Parent = startNode
-            };
-        allNodes.Add(decisionNode1);
+		string nodeContent = node.Type switch
+		{
+			NodeType.Start => $"<div class='node start {highlightedClass}' style='left: {node.GetAbsoluteX()}px; top: {node.GetAbsoluteY()}px;'>{node.Content}</div>",
+			NodeType.Decision => $"<div class='node decision-container' style='left: {node.GetAbsoluteX()}px; top: {node.GetAbsoluteY()}px;'><div class='decision {highlightedClass}'></div><div class='decision-content'>{node.Content}</div></div>",
+			NodeType.Action => $"<div class='node action {highlightedClass}' style='left: {node.GetAbsoluteX()}px; top: {node.GetAbsoluteY()}px;'>{node.Content}</div>",
+			_ => ""
+		};
 
-        var yesAction1 = new FlowNode
-            {
-                Type = NodeType.Action,
-                Content = "Yes Action 1",
-                X = -150,
-                Y = 100,
-                Parent = decisionNode1
-            };
-        allNodes.Add(yesAction1);
+		contentBuilder.Append(nodeContent);
+		return new MarkupString(contentBuilder.ToString());
+	}
 
-        var noAction1 = new FlowNode
-            {
-                Type = NodeType.Action,
-                Content = "No Action 1",
-                X = 150,
-                Y = 100,
-                Parent = decisionNode1
-            };
-        allNodes.Add(noAction1);
-        
-    }
 
-    private MarkupString RenderAllArrows()
-    {
-        StringBuilder allArrowsContent = new StringBuilder();
+	List<FlowNode> allNodes = new List<FlowNode>();
 
-        foreach (var node in allNodes)
-        {
-            if (node.Parent != null)
-                allArrowsContent.Append(RenderArrow(node.Parent, node).ToString());
-        }
+	private MarkupString RenderAllNodes()
+	{
+		StringBuilder allNodeContent = new StringBuilder();
 
-        return new MarkupString(allArrowsContent.ToString());
-    }
+		foreach (var node in allNodes)
+		{
+			allNodeContent.Append(RenderNode(node).ToString());
+		}
 
-    private string RenderArrow(FlowNode fromNode, FlowNode toNode)
-    {
-        if (fromNode == null || toNode == null) return "";
+		return new MarkupString(allNodeContent.ToString());
+	}
 
-        StringBuilder arrowBuilder = new StringBuilder();
+	protected override void OnInitialized()
+	{
+		CreateFlowChartExample();
+	}
 
-        int startX = fromNode.GetAbsoluteX();
-        int startY = fromNode.GetAbsoluteY();
-        int endX = toNode.GetAbsoluteX();
-        int endY = toNode.GetAbsoluteY();
 
-        int width = endX - startX;
-        int height = endY - startY;
+	public void CreateFlowChartExample()
+	{
+		FlowNode startNode = new FlowNode
+			{
+				Type = NodeType.Start,
+				Content = "시작",
+				X = 800,
+				Y = 100
+			};
+		allNodes.Add(startNode);
 
-        // X 값이 같으면 세로로 직선
-        if (startX == endX)
-        {
-            arrowBuilder.Append($"<div class='line' style='left:{startX}px; top:{startY}px; height:{height}px; width:2px;'></div>");
-            return arrowBuilder.ToString();
-        }
+		// 결정 노드 생성
+		FlowNode decisionNode1 = new FlowNode
+			{
+				Type = NodeType.Decision,
+				Content = "is it Pikachu?",
+				X = 0,
+				Y = 100,
+				Parent = startNode,
+				IsHighlighted = true
+			};
+		allNodes.Add(decisionNode1);
 
-        // 가로 선
-        if (width > 0)
-        {
-            arrowBuilder.Append($"<div class='line' style='left:{startX}px; top:{startY}px; width:{width}px;'></div>");
-        }
-        else
-        {
-            arrowBuilder.Append($"<div class='line' style='left:{endX}px; top:{startY}px; width:{Math.Abs(width)}px;'></div>");
-        }
+		var yesAction1 = new FlowNode
+			{
+				Type = NodeType.Action,
+				Content = "Yes Action 1",
+				X = -150,
+				Y = 100,
+				Parent = decisionNode1,
+				IsHighlighted = true
+			};
+		allNodes.Add(yesAction1);
 
-        // 세로 선 (startY와 endY가 다를 때만 그리기)
-        if (height != 0)
-        {
-            if (width > 0)
-            {
-                arrowBuilder.Append($"<div class='line' style='left:{endX}px; top:{Math.Min(startY, endY)}px; height:{Math.Abs(height)}px; width:2px;'></div>");
-            }
-            else
-            {
-                arrowBuilder.Append($"<div class='line' style='left:{endX}px; top:{endY}px; height:{Math.Abs(height)}px; width:2px;'></div>");
-            }
-        }
+		var noAction1 = new FlowNode
+			{
+				Type = NodeType.Action,
+				Content = "No Action 1",
+				X = 150,
+				Y = 100,
+				Parent = decisionNode1
+			};
+		allNodes.Add(noAction1);
 
-        return arrowBuilder.ToString();
-    }
+	}
+
+	private MarkupString RenderAllArrows()
+	{
+		StringBuilder allArrowsContent = new StringBuilder();
+
+		foreach (var node in allNodes)
+		{
+			if (node.Parent != null)
+				allArrowsContent.Append(RenderArrow(node.Parent, node).ToString());
+		}
+
+		return new MarkupString(allArrowsContent.ToString());
+	}
+
+	private string RenderArrow(FlowNode fromNode, FlowNode toNode)
+	{
+		if (fromNode == null || toNode == null) return "";
+
+		StringBuilder arrowBuilder = new StringBuilder();
+
+		int startX = fromNode.GetAbsoluteX() + 11;
+		int startY = fromNode.GetAbsoluteY() + 11;
+		int endX = toNode.GetAbsoluteX() + 11;
+		int endY = toNode.GetAbsoluteY() + 11;
+
+		int horizontalLength = endX - startX;
+		int verticalLength = endY - startY;
+
+		string highlightedClass = toNode.IsHighlighted ? "highlighted" : "";
+
+
+		// X 값이 같으면 세로로 직선
+		if (startX == endX)
+		{
+			arrowBuilder.Append($"<div class='line {highlightedClass}' style='left:{startX}px; top:{Math.Min(startY, endY)}px; height:{Math.Abs(verticalLength)}px;'></div>");
+			return arrowBuilder.ToString();
+		}
+		else
+		{
+
+			// 가로 선
+			if (horizontalLength > 0)
+			{
+				arrowBuilder.Append($"<div class='line {highlightedClass}' style='left:{startX}px; top:{startY}px; height:{horizontalLength}px; transform: rotate(-90deg); transform-origin: left top;'></div>");
+			}
+			else
+			{
+				arrowBuilder.Append($"<div class='line {highlightedClass}' style='left:{startX}px; top:{startY}px; height:{Math.Abs(horizontalLength)}px; transform: rotate(90deg); transform-origin: right top;'></div>");
+			}
+
+			// 세로 선
+			if (verticalLength != 0)
+			{
+				arrowBuilder.Append($"<div class='line {highlightedClass}' style='left:{endX}px; top:{Math.Min(startY, endY)}px; height:{Math.Abs(verticalLength)}px;'></div>");
+			}
+
+		}
+
+		return arrowBuilder.ToString();
+	}
 
 
 
@@ -174,127 +185,3 @@
 
 }
 
-<style>
-    .flow-chart-wrapper {
-        width: 1600px;
-        height: 900px;
-        overflow: hidden;
-        border: 1px solid black;
-        position: relative;
-    }
-
-    .flow-chart {
-        z-index: 1;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-        flex-direction: column;
-        transform-origin: 0 0;
-        transition: transform 0.3s ease-out;
-        position: relative;
-    }
-
-    
-    .start {
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        position :absolute;
-        
-        width: 100px;
-        height: 40px;
-        background-color: white;
-        border: 2px solid black;
-        text-align: center;
-        line-height: 40px;
-    }
-
-    .node {
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        position: absolute;
-
-        padding: 10px;
-        margin: 10px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
-
-    .decision-container {
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        position: absolute;
-        width: 120px; /* 60px (left triangle) + 60px (right triangle) */
-        height: 60px; /* 30px (top) + 30px (bottom) */
-
-    }
-    
-    .decision {
-        width: 0px;
-        height: 0px;
-        border-right: 60px solid #e0e0e0; /* 밝은 회색 */
-        border-top: 30px solid transparent;
-        border-bottom: 30px solid transparent;
-        position: absolute;
-        left: 0;
-        top: 50%;
-        transform: translateY(-50%);
-    }
-
-        .decision:after {
-            content: "";
-            border-left: 60px solid #e0e0e0; /* 밝은 회색 */
-            border-top: 30px solid transparent;
-            border-bottom: 30px solid transparent;
-            position: absolute;
-            top: 50%;
-            left: 60px;
-            transform: translateY(-50%);
-        }
-
-    .decision-content {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        white-space: nowrap;
-    }
-
-    /* Highlighted 상태 */
-    .decision.highlighted,
-    .decision.highlighted:after {
-        border-color: #ff0000; /* 빨강 */
-    }
-
-
-    .action {
-        width: 120px;
-        height: 60px;
-        background-color: white;
-        border: 2px solid black;
-    }
-
-
-    .line {
-        position: absolute;
-        background-color: lightgray;
-        height: 2px;
-        z-index: -1;
-    }
-
-
-    .children {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        flex-direction: row;
-    }
-
-    .highlighted {
-        border-color: red;
-    }
-</style>

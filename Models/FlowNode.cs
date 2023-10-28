@@ -1,10 +1,13 @@
-﻿public enum NodeType
+﻿using System.Xml.Linq;
+using static PokemonSearchMoveset.Pages.Wild_Table;
+
+public enum NodeType
 {
     Start,
     Decision,
     Action,
-    Direction
 }
+
 
 public class FlowNode
 {
@@ -28,5 +31,6 @@ public class FlowNode
         return Parent != null ? Y + Parent.GetAbsoluteY() : Y;
     }
 
-    public bool IsHighlighted { get; set; }
+	public bool IsHighlighted { get; set; }
+
 }

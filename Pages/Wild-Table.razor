@@ -11,6 +11,11 @@
 @using System.Globalization
 @using System.IO
 
+
+<div class="col-md-12 mb-3">
+    <!-- mb-3 추가 -->
+    <VersionSelect CurrentLanguageId="@CurrentLanguageId" OnVersionSelected="HandleVersionChecked" @ref="versionSelectComponent" />
+</div>
 <InputFile OnChange="LoadCsvData" />
 
 <label>
@@ -28,6 +33,8 @@
                 <th @onclick="() => SortTable(nameof(OutputRow.Id))">ID</th>
                 <th @onclick="() => SortTable(nameof(OutputRow.Name))">Pokemon Name</th>
                 <th @onclick="() => SortTable(nameof(OutputRow.Level))">Level</th>
+                <th>Type1</th>
+                <th>Type2</th>
                 <th>Ability1</th>
                 <th>Ability2</th>
                 <th>Hidden Ability</th>
@@ -45,6 +52,8 @@
                     <td>@row.Id</td>
                     <td>@row.Name</td>
                     <td>@row.Level</td>
+                    <td>@row.Type1</td>
+                    <td>@row.Type2</td>
                     <td>@row.Ability1</td>
                     <td>@row.Ability2</td>
                     <td>@row.Ability3</td>
@@ -68,6 +77,8 @@
     private List<AbilityNameCSV> AbilityNames { get; set; } = new List<AbilityNameCSV>();
     private List<PokemonMoveCSV> AllPokemonMoves { get; set; } = new List<PokemonMoveCSV>();
     private List<PokemonTypeCSV> PokemonTypes = new List<PokemonTypeCSV>();
+    private List<PokemonTypePastCSV> PokemonTypesPast = new List<PokemonTypePastCSV>();
+
     private List<TypeNameCSV> TypeNames = new List<TypeNameCSV>();
     public List<MoveNameCSV> MoveNames { get; set; } = new List<MoveNameCSV>();
 
@@ -83,6 +94,7 @@
         AllPokemonMoves = dataService.AllPokemonMoves;
         PokemonTypes = dataService.PokemonTypes;
         TypeNames = dataService.TypeNames;
+        PokemonTypesPast = dataService.PokemonTypesPast;
         MoveNames = dataService.MoveNames;
         AbilityNames = dataService.AbilityNames;
 
@@ -96,8 +108,17 @@
 
     private MoveSearch moveSearchComponent = new MoveSearch();
     private AbilitySearch abilitySearchComponent = new AbilitySearch();
+    private VersionSelect versionSelectComponent = new VersionSelect();
 
+    // 데이터 가져오기
 
+    private int SelectedVersionId { get; set; }
+
+    private void HandleVersionChecked(int checkedVersionId)
+    {
+        SelectedVersionId = checkedVersionId;
+        Console.WriteLine($"Version selected: {SelectedVersionId}"); // 디버그 메시지 추가
+    }
 
 
 
@@ -133,6 +154,8 @@
         public int Id { get; set; }
         public string Name { get; set; }
         public int Level { get; set; }
+        public string Type1 { get; set; }
+        public string Type2 { get; set; }
         public string Ability1 { get; set; }
         public string Ability2 { get; set; }
         public string Ability3 { get; set; }
@@ -287,8 +310,9 @@
             outputRow.Ability2 = abilities.Item2;
             outputRow.Ability3 = abilities.Item3;
 
-
-
+            var types = GetPokemonTypesById(matchedPokemon.Id);
+            outputRow.Type1 = types.Type1;
+            outputRow.Type2 = types.Type2;
             if(DisplayAsInt)
             {
                 if (possibleMoves.Count > 0)
@@ -423,6 +447,43 @@
         }
         return (ability1, ability2, hiddenAbility);
     }
+    public string GetTypeNameById(int typeId, int languageId)
+    {
+        return TypeNames.FirstOrDefault(tn => tn.TypeId == typeId && tn.LocalLanguageId == languageId)?.Name ?? string.Empty;
+    }
+
+    public (string Type1, string Type2) GetPokemonTypesById(int pokemonId)
+    {
+        var types = PokemonTypes.Where(pt => pt.PokemonId == pokemonId).ToList();
+        var typePast = PokemonTypesPast.FirstOrDefault(ptp => ptp.PokemonId == pokemonId && ptp.GenerationId >= versionSelectComponent.CurrentGenerationId);
+
+        if (typePast != null)
+        {
+            // 만약 조건에 맞는 PokemonTypePast가 있으면 해당 타입을 사용합니다.
+            string type1 = typePast.Slot == 1 ? GetTypeNameById(typePast.TypeId, CurrentLanguageId) : string.Empty;
+            string type2 = typePast.Slot == 2 ? GetTypeNameById(typePast.TypeId, CurrentLanguageId) : string.Empty;
+            return (type1, type2);
+        }
+        else
+        {
+            // 그렇지 않으면 기본 PokemonTypes를 사용합니다.
+            string type1 = types.FirstOrDefault(t => t.Slot == 1) != null ? GetTypeNameById(types.First(t => t.Slot == 1).TypeId, CurrentLanguageId) : string.Empty;
+            string type2 = types.FirstOrDefault(t => t.Slot == 2) != null ? GetTypeNameById(types.First(t => t.Slot == 2).TypeId, CurrentLanguageId) : string.Empty;
+            return (type1, type2);
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
 
     private bool sortAscending = true;
     private string currentSortingColumn = "";
