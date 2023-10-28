@@ -4,12 +4,14 @@
 @using PokemonSearchMoveset.Models
 @using PokemonSearchMoveset.Services
 @using Microsoft.JSInterop
+@using PokemonSearchMoveset.Components
 @inject HttpClient Http
 @inject IJSRuntime JSRuntime
-@using PokemonSearchMoveset.Components
 @inject DataService DataService
 @using System.Globalization
 @using System.IO
+
+<FlowChart />
 
 
 <InputFile OnChange="LoadCsvData" />
@@ -18,7 +20,7 @@
 
 @if (wildPokemons != null && wildPokemons.Count > 0)
 {
-    <MudTable Items="@wildPokemons" Dense="@dense" Hover="@hover" Bordered="@bordered" Striped="@striped" RowsPerPage="10" Breakpoint="Breakpoint.Sm">
+    <MudTable Items="@wildPokemons" Filter="new Func<WildPokemon, bool>(FilterFunc)" Dense="@dense" Hover="@hover" Bordered="@bordered" Striped="@striped" RowsPerPage="10" Breakpoint="Breakpoint.Sm">
         <ToolBarContent>
             <MudText Typo="Typo.h6">Wild Pokemons</MudText>
             <MudSpacer />
