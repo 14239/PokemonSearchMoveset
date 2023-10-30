@@ -326,8 +326,20 @@ a, .btn-link {
     position: absolute;
     background-color: lightgray;
     border-right: 2px solid black;
-    z-index: -1;
+    border-top: 2px solid black;
+    z-index: -2;
     width: 2px;
+    height: 2px; /* 높이 설정 */
+}
+
+    .line.highlighted {
+        z-index: -1;
+    }
+
+.arrow-label {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    /* 다른 스타일 설정 */
 }
 
 
@@ -354,7 +366,7 @@ a, .btn-link {
     --x: -25%;
     --y: -10%;
     border-image-slice: 1;
-    border-image-source: linear-gradient(to bottom, black calc(var(--x) - 10%), red var(--x) var(--y), black calc(var(--y) + 10%));
+    border-image-source: linear-gradient(to bottom, lightblue calc(var(--x) - 10%), red var(--x) var(--y), lightblue calc(var(--y) + 10%));
     animation: moveGradient 5s linear infinite;
 }
 
@@ -362,7 +374,7 @@ a, .btn-link {
     --x: -25%;
     --y: -10%;
     border-image-slice: 1;
-    border-image-source: linear-gradient(to top right, black calc(var(--x) - 10%), red var(--x) var(--y), black calc(var(--y) + 10%));
+    border-image-source: linear-gradient(to top right, lightblue calc(var(--x) - 10%), red var(--x) var(--y), lightblue calc(var(--y) + 10%));
     animation: moveGradient 5s linear infinite;
 }
 
@@ -377,4 +389,11 @@ a, .btn-link {
         --x: 110%;
         --y: 125%;
     }
+}
+
+.pokemon-info {
+    position: absolute;
+    top: 0;
+    left: 0;
+    font-weight: bold;
 }

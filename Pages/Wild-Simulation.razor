@@ -8,268 +8,556 @@
 @inject HttpClient Http
 @inject IJSRuntime JSRuntime
 @inject DataService DataService
+@inject MoveInfoService MoveInfoService
 @using System.Globalization
 @using System.IO
+@using System.Text
+@using System.Collections.Generic
 
-<FlowChart />
+<div class="flow-chart-wrapper">
+	<div class="pokemon-info">
+		@if (selectedPokemon != null)
+		{
+			<span>@selectedPokemon.Name - 레벨: @selectedPokemon.Level</span>
+		}
+		else
+		{
+			<span>선택한 포켓몬이 없습니다.</span>
+		}
+
+	</div>
+	<div class="flow-chart">
+		@RenderAllNodes()
+		@RenderAllArrows()
+	</div>
+</div>
+
 
 
 <InputFile OnChange="LoadCsvData" />
-
-<MudButton OnClick="GenerateOutputTable">표 생성하기</MudButton>
+<b></b>
+<MudButton Variant="Variant.Filled" Color="Color.Primary" >시뮬레이션</MudButton>
 
 @if (wildPokemons != null && wildPokemons.Count > 0)
 {
-    <MudTable Items="@wildPokemons" Filter="new Func<WildPokemon, bool>(FilterFunc)" Dense="@dense" Hover="@hover" Bordered="@bordered" Striped="@striped" RowsPerPage="10" Breakpoint="Breakpoint.Sm">
-        <ToolBarContent>
-            <MudText Typo="Typo.h6">Wild Pokemons</MudText>
-            <MudSpacer />
-            <MudTextField @bind-Value="searchString" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
-        </ToolBarContent>
-        <HeaderContent>
-            <MudTh>User ID</MudTh>
-            <MudTh>Name</MudTh>
-            <MudTh>Level</MudTh>
-            <MudTh>Type1</MudTh>
-            <MudTh>Type2</MudTh>
-            <MudTh>Ability</MudTh>
-            <MudTh>Move1</MudTh>
-            <MudTh>Move2</MudTh>
-            <MudTh>Move3</MudTh>
-            <MudTh>Move4</MudTh>
-        </HeaderContent>
-        <RowTemplate>
-            <MudTd DataLabel="ID">@context.Id</MudTd>
-            <MudTd DataLabel="Name">@context.Name</MudTd>
-            <MudTd DataLabel="Level">@context.Level</MudTd>
-            <MudTd DataLabel="Type1">@context.Type1</MudTd>
-            <MudTd DataLabel="Type2">@context.Type2</MudTd>
-            <MudTd DataLabel="Ability">@context.Ability</MudTd>
-            <MudTd DataLabel="Move1">@context.Move1</MudTd>
-            <MudTd DataLabel="Move2">@context.Move2</MudTd>
-            <MudTd DataLabel="Move3">@context.Move3</MudTd>
-            <MudTd DataLabel="Move4">@context.Move4</MudTd>
-            <MudTd><MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small" @onclick="(() => ShowLog(context))">Show Log</MudButton></MudTd>
-        </RowTemplate>
-        <PagerContent>
-            <MudTablePager />
-        </PagerContent>
-    </MudTable>
+	<MudTable Items="@wildPokemons" Filter="new Func<WildPokemon, bool>(FilterFunc)" Dense="@dense" Hover="@hover" Bordered="@bordered" Striped="@striped" RowsPerPage="10" Breakpoint="Breakpoint.Sm">
+		<ToolBarContent>
+			<MudText Typo="Typo.h6">Wild Pokemons</MudText>
+			<MudSpacer />
+			<MudTextField @bind-Value="searchString" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+		</ToolBarContent>
+		<HeaderContent>
+			<MudTh>User ID</MudTh>
+			<MudTh>Name</MudTh>
+			<MudTh>Level</MudTh>
+			<MudTh>Type1</MudTh>
+			<MudTh>Type2</MudTh>
+			<MudTh>Ability</MudTh>
+			<MudTh>Move1</MudTh>
+			<MudTh>Move2</MudTh>
+			<MudTh>Move3</MudTh>
+			<MudTh>Move4</MudTh>
+		</HeaderContent>
+		<RowTemplate>
+			<MudTd DataLabel="ID">@context.Id</MudTd>
+			<MudTd DataLabel="Name">@context.Name</MudTd>
+			<MudTd DataLabel="Level">@context.Level</MudTd>
+			<MudTd DataLabel="Type1">@context.Type1</MudTd>
+			<MudTd DataLabel="Type2">@context.Type2</MudTd>
+			<MudTd DataLabel="Ability">@context.Ability</MudTd>
+			<MudTd DataLabel="Move1">@context.Move1</MudTd>
+			<MudTd DataLabel="Move2">@context.Move2</MudTd>
+			<MudTd DataLabel="Move3">@context.Move3</MudTd>
+			<MudTd DataLabel="Move4">@context.Move4</MudTd>
+			<MudTd><MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small" @onclick="(() => ShowLog(context))">Show Log</MudButton></MudTd>
+			<MudTd>
+				<MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small" @onclick="(() => RunSimulation(context))">Run Simulation</MudButton>
+			</MudTd>
+		</RowTemplate>
 
-    <div class="d-flex flex-wrap mt-4">
-        <MudSwitch @bind-Checked="@hover" Color="Color.Primary">Hover</MudSwitch>
-        <MudSwitch @bind-Checked="@dense" Color="Color.Secondary">Dense</MudSwitch>
-        <MudSwitch @bind-Checked="@striped" Color="Color.Tertiary">Striped</MudSwitch>
-        <MudSwitch @bind-Checked="@bordered" Color="Color.Warning">Bordered</MudSwitch>
-    </div>
+		<PagerContent>
+			<MudTablePager />
+		</PagerContent>
+	</MudTable>
+
+	<div class="d-flex flex-wrap mt-4">
+		<MudSwitch @bind-Checked="@hover" Color="Color.Primary">Hover</MudSwitch>
+		<MudSwitch @bind-Checked="@dense" Color="Color.Secondary">Dense</MudSwitch>
+		<MudSwitch @bind-Checked="@striped" Color="Color.Tertiary">Striped</MudSwitch>
+		<MudSwitch @bind-Checked="@bordered" Color="Color.Warning">Bordered</MudSwitch>
+	</div>
 }
 
 @if (selectedPokemon != null)
 {
-    <!-- 상세 정보 팝업 -->
-    <div class="modal">
-        <h3>@selectedPokemon.Name</h3>
-        <p>Level: @selectedPokemon.Level</p>
-        <p>Logs:</p>
-        <ul>
-            @foreach (var log in selectedPokemon.Log.TurnActions)
-            {
-                <li>@log</li>
-            }
-        </ul>
-        <!-- ... 다른 세부 정보 ... -->
-        <button @onclick="CloseModal">닫기</button>
-    </div>
+	<!-- 상세 정보 팝업 -->
+	<div class="modal">
+		<h3>@selectedPokemon.Name</h3>
+		<p>Level: @selectedPokemon.Level</p>
+		<p>Logs:</p>
+		<ul>
+			@foreach (var log in selectedPokemon.Log.TurnActions)
+			{
+				<li>@log</li>
+			}
+		</ul>
+		<!-- ... 다른 세부 정보 ... -->
+		<button @onclick="CloseModal">닫기</button>
+	</div>
 }
 
 @code {
-    [Inject]
-    private DataService dataService { get; set; }
+	[Inject]
+	private DataService dataService { get; set; }
 
 
-    private List<PokemonCSV> Pokemons { get; set; } = new List<PokemonCSV>();
-    private List<PokemonAbilityCSV> AllPokemonAbilities { get; set; } = new List<PokemonAbilityCSV>();
-    private List<AbilityNameCSV> AbilityNames { get; set; } = new List<AbilityNameCSV>();
-    private List<PokemonMoveCSV> AllPokemonMoves { get; set; } = new List<PokemonMoveCSV>();
-    private List<PokemonTypeCSV> PokemonTypes = new List<PokemonTypeCSV>();
-    private List<TypeNameCSV> TypeNames = new List<TypeNameCSV>();
-    public List<MoveNameCSV> MoveNames { get; set; } = new List<MoveNameCSV>();
+	private List<PokemonCSV> Pokemons { get; set; } = new List<PokemonCSV>();
+	private List<PokemonAbilityCSV> AllPokemonAbilities { get; set; } = new List<PokemonAbilityCSV>();
+	private List<AbilityNameCSV> AbilityNames { get; set; } = new List<AbilityNameCSV>();
+	private List<PokemonMoveCSV> AllPokemonMoves { get; set; } = new List<PokemonMoveCSV>();
+	private List<PokemonTypeCSV> PokemonTypes = new List<PokemonTypeCSV>();
+	private List<TypeNameCSV> TypeNames = new List<TypeNameCSV>();
+	public List<MoveNameCSV> MoveNames { get; set; } = new List<MoveNameCSV>();
 
-    // 필터링된 데이터를 저장할 변수를 추가합니다.
-    private List<PokemonMoveCSV> FilteredPokemonMoves { get; set; } = new List<PokemonMoveCSV>();
-
-
-
-    protected override void OnInitialized()
-    {
-        Pokemons = dataService.Pokemons;
-        AllPokemonAbilities = dataService.AllPokemonAbilities;
-        AllPokemonMoves = dataService.AllPokemonMoves;
-        PokemonTypes = dataService.PokemonTypes;
-        TypeNames = dataService.TypeNames;
-        MoveNames = dataService.MoveNames;
-        AbilityNames = dataService.AbilityNames;
-
-        FilteredPokemonMoves = AllPokemonMoves
-            .Where(pm =>
-                (pm.VersionGroupId == 25 || pm.VersionGroupId == 26) &&
-                pm.PokemonMoveMethodId == 1)
-            .ToList();
-    }
-
-
-    // 언어 변경
-    private int _previousLanguageId;
-
-    [CascadingParameter(Name = "SelectedLanguageId")]
-    public int CurrentLanguageId { get; set; }
-    public int CurrentGenerationId { get; set; }
-
-    protected override void OnParametersSet()
-    {
-        if (_previousLanguageId != CurrentLanguageId)
-        {
-            StateHasChanged();
-            _previousLanguageId = CurrentLanguageId;
-        }
-    }
+	// 필터링된 데이터를 저장할 변수를 추가합니다.
+	private List<PokemonMoveCSV> FilteredPokemonMoves { get; set; } = new List<PokemonMoveCSV>();
 
 
 
-    public class PokemonLog
-    {
-        public List<string> TurnActions { get; set; } = new List<string>(); // 각 턴의 행동
-        public int AccumulatedPokemonCount { get; set; } = 0; // 누적 포켓몬 사용 수
-        public int SpecialActionCount { get; set; } = 0; // 특수 대처 횟수
+	protected override void OnInitialized()
+	{
+		Pokemons = dataService.Pokemons;
+		AllPokemonAbilities = dataService.AllPokemonAbilities;
+		AllPokemonMoves = dataService.AllPokemonMoves;
+		PokemonTypes = dataService.PokemonTypes;
+		TypeNames = dataService.TypeNames;
+		MoveNames = dataService.MoveNames;
+		AbilityNames = dataService.AbilityNames;
 
-        public void AddTurnAction(string action)
-        {
-            TurnActions.Add(action);
-        }
+		FilteredPokemonMoves = AllPokemonMoves
+			.Where(pm =>
+				(pm.VersionGroupId == 25 || pm.VersionGroupId == 26) &&
+				pm.PokemonMoveMethodId == 1)
+			.ToList();
 
-        public void IncrementPokemonCount()
-        {
-            AccumulatedPokemonCount++;
-        }
+		CreateFlowChartExample();
 
-        public void IncrementSpecialActionCount()
-        {
-            SpecialActionCount++;
-        }
-    }
+	}
 
-    private class WildPokemon // 레벨, 특성으로 분류함
-    {
-        public int Id { get; set; }
-        public string Name { get; set; }
-        public int Level { get; set; }
-        public string Type1 { get; set; }
-        public string Type2 { get; set; }
-        public int Ability { get; set; }
-        public int Move1 { get; set; }
-        public int Move2 { get; set; }
-        public int Move3 { get; set; }
-        public int Move4 { get; set; }
-        public PokemonLog Log { get; set; } = new PokemonLog(); // 로그 객체 포함
 
-    }
-    
-    private List<WildPokemon> wildPokemons { get; set; } = new List<WildPokemon>();
+	// 언어 변경
+	private int _previousLanguageId;
 
-    private async Task LoadCsvData(InputFileChangeEventArgs e)
-    {
-        var file = e.File;
+	[CascadingParameter(Name = "SelectedLanguageId")]
+	public int CurrentLanguageId { get; set; }
+	public int CurrentGenerationId { get; set; }
 
-        if (file != null)
-        {
-            var stream = file.OpenReadStream();
-            using var reader = new StreamReader(stream);
-            var csvData = await reader.ReadToEndAsync();
-
-            wildPokemons = ParseInputData(csvData);
-        }
-    }
+	protected override void OnParametersSet()
+	{
+		if (_previousLanguageId != CurrentLanguageId)
+		{
+			StateHasChanged();
+			_previousLanguageId = CurrentLanguageId;
+		}
+	}
 
 
 
-    private void GenerateOutputTable()
-    {
-        // 표를 생성하는 코드 여기에 작성
-        // 예: wildPokemons 리스트를 필터링 또는 정렬
-    }
+	public class PokemonLog
+	{
+		public List<string> TurnActions { get; set; } = new List<string>(); // 각 턴의 행동
+		public int AccumulatedPokemonCount { get; set; } = 0; // 누적 포켓몬 사용 수
+		public int SpecialActionCount { get; set; } = 0; // 특수 대처 횟수
 
-    private List<WildPokemon> ParseInputData(string csvData)
-    {
-        var lines = csvData.Split('\n').Skip(1).Where(line => !string.IsNullOrWhiteSpace(line)); // 첫 번째 행은 헤더이므로 생략하고 빈 행은 필터링
-        var result = new List<WildPokemon>();
+		public void AddTurnAction(string action)
+		{
+			TurnActions.Add(action);
+		}
 
-        foreach (var line in lines)
-        {
-            var values = line.Split(',').Select(val => val.Trim()).ToArray(); // 쉼표로 구분하고 공백 제거
+		public void IncrementPokemonCount()
+		{
+			AccumulatedPokemonCount++;
+		}
 
-            var wildPokemonForAbility1 = new WildPokemon
-                {
-                    Id = int.Parse(values[0]),
-                    Name = values[1],
-                    Level = int.Parse(values[2]),
-                    Type1 = values[3],
-                    Type2 = values[4],
-                    Ability = int.Parse(values[5]),
-                    Move1 = string.IsNullOrEmpty(values[8]) ? -1 : int.Parse(values[8]),
-                    Move2 = string.IsNullOrEmpty(values[9]) ? -1 : int.Parse(values[9]),
-                    Move3 = string.IsNullOrEmpty(values[10]) ? -1 : int.Parse(values[10]),
-                    Move4 = string.IsNullOrEmpty(values[11]) ? -1 : int.Parse(values[11])
-                };
-            result.Add(wildPokemonForAbility1);
+		public void IncrementSpecialActionCount()
+		{
+			SpecialActionCount++;
+		}
+	}
 
-            // Ability2 값이 -1이 아닐 경우 별도의 포켓몬 객체로 추가
-            if (values[6] != "-1")
-            {
-                var wildPokemonForAbility2 = new WildPokemon
-                    {
-                        Id = wildPokemonForAbility1.Id,
-                        Name = wildPokemonForAbility1.Name,
-                        Level = wildPokemonForAbility1.Level,
-                        Type1 = values[3],
-                        Type2 = values[4],
-                        Ability = int.Parse(values[6]),
-                        Move1 = wildPokemonForAbility1.Move1,
-                        Move2 = wildPokemonForAbility1.Move2,
-                        Move3 = wildPokemonForAbility1.Move3,
-                        Move4 = wildPokemonForAbility1.Move4
-                    };
-                result.Add(wildPokemonForAbility2);
-            }
-        }
+	public class WildPokemon // 레벨, 특성으로 분류함
+	{
+		public int Id { get; set; }
+		public string Name { get; set; }
+		public int Level { get; set; }
+		public string Type1 { get; set; }
+		public string Type2 { get; set; }
+		public int Ability { get; set; }
+		public int Move1 { get; set; }
+		public int Move2 { get; set; }
+		public int Move3 { get; set; }
+		public int Move4 { get; set; }
+		public PokemonLog Log { get; set; } = new PokemonLog(); // 로그 객체 포함
 
-        return result;
-    }
-    private bool dense = false;
-    private bool hover = true;
-    private bool striped = false;
-    private bool bordered = true;
-    private string searchString = "";
-    private WildPokemon selectedPokemon = null;
-    private bool _selectOnRowClick = true;
-    private int rowsPerPage = 10;  // 초기 페이지당 행 수
+	}
 
-    private bool FilterFunc(WildPokemon pokemon)
-    {
-        if (string.IsNullOrWhiteSpace(searchString))
-            return true;
-        if (pokemon.Name.Contains(searchString, StringComparison.OrdinalIgnoreCase))
-            return true;
-        return false;
-    }
+	private List<WildPokemon> wildPokemons { get; set; } = new List<WildPokemon>();
 
-    private void ShowLog(WildPokemon pokemon)
-    {
-        // 로그 표시 코드
-    }
-    private void CloseModal()
-    {
-        selectedPokemon = null;
-    }
+	private async Task LoadCsvData(InputFileChangeEventArgs e)
+	{
+		var file = e.File;
+
+		if (file != null)
+		{
+			var stream = file.OpenReadStream();
+			using var reader = new StreamReader(stream);
+			var csvData = await reader.ReadToEndAsync();
+
+			wildPokemons = ParseInputData(csvData);
+		}
+	}
+	private List<WildPokemon> ParseInputData(string csvData)
+	{
+		var lines = csvData.Split('\n').Skip(1).Where(line => !string.IsNullOrWhiteSpace(line)); // 첫 번째 행은 헤더이므로 생략하고 빈 행은 필터링
+		var result = new List<WildPokemon>();
+
+		foreach (var line in lines)
+		{
+			var values = line.Split(',').Select(val => val.Trim()).ToArray(); // 쉼표로 구분하고 공백 제거
+
+			var wildPokemonForAbility1 = new WildPokemon
+				{
+					Id = int.Parse(values[0]),
+					Name = values[1],
+					Level = int.Parse(values[2]),
+					Type1 = values[3],
+					Type2 = values[4],
+					Ability = int.Parse(values[5]),
+					Move1 = string.IsNullOrEmpty(values[8]) ? -1 : int.Parse(values[8]),
+					Move2 = string.IsNullOrEmpty(values[9]) ? -1 : int.Parse(values[9]),
+					Move3 = string.IsNullOrEmpty(values[10]) ? -1 : int.Parse(values[10]),
+					Move4 = string.IsNullOrEmpty(values[11]) ? -1 : int.Parse(values[11])
+				};
+			result.Add(wildPokemonForAbility1);
+
+			// Ability2 값이 -1이 아닐 경우 별도의 포켓몬 객체로 추가
+			if (values[6] != "-1")
+			{
+				var wildPokemonForAbility2 = new WildPokemon
+					{
+						Id = wildPokemonForAbility1.Id,
+						Name = wildPokemonForAbility1.Name,
+						Level = wildPokemonForAbility1.Level,
+						Type1 = values[3],
+						Type2 = values[4],
+						Ability = int.Parse(values[6]),
+						Move1 = wildPokemonForAbility1.Move1,
+						Move2 = wildPokemonForAbility1.Move2,
+						Move3 = wildPokemonForAbility1.Move3,
+						Move4 = wildPokemonForAbility1.Move4
+					};
+				result.Add(wildPokemonForAbility2);
+			}
+		}
+
+		return result;
+	}
+	private bool dense = false;
+	private bool hover = true;
+	private bool striped = false;
+	private bool bordered = true;
+	private string searchString = "";
+	private bool _selectOnRowClick = true;
+	private int rowsPerPage = 10;  // 초기 페이지당 행 수
+
+	private bool FilterFunc(WildPokemon pokemon)
+	{
+		if (string.IsNullOrWhiteSpace(searchString))
+			return true;
+		if (pokemon.Name.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+			return true;
+		return false;
+	}
+
+	private WildPokemon selectedPokemon = null;
+
+
+	private void ShowLog(WildPokemon pokemon)
+	{
+		// 로그 표시 코드
+	}
+	private void CloseModal()
+	{
+		selectedPokemon = null;
+	}
+
+	// 플로우차트
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender)
+		{
+			await JSRuntime.InvokeVoidAsync("initFlowChart");
+		}
+	}
+
+	private MarkupString RenderNode(FlowNode node)
+	{
+		if (node == null) return new MarkupString("");
+
+		StringBuilder contentBuilder = new StringBuilder();
+		string highlightedClass = "";
+
+		if (node.Type == NodeType.Decision)
+		{
+			highlightedClass = node.IsHighlighted ? "highlighted-decision" : "";
+
+		}
+		else
+		{
+			highlightedClass = node.IsHighlighted ? "highlighted" : "";
+
+		}
+
+		string nodeContent = node.Type switch
+		{
+			NodeType.Start => $"<div class='node start {highlightedClass}' style='left: {node.GetAbsoluteX(allNodes)}px; top: {node.GetAbsoluteY(allNodes)}px;'>{node.Content}</div>",
+			NodeType.Decision => $"<div class='node decision-container' style='left: {node.GetAbsoluteX(allNodes)}px; top: {node.GetAbsoluteY(allNodes)}px;'><div class='decision {highlightedClass}'></div><div class='decision-content'>{node.Content}</div></div>",
+			NodeType.Action => $"<div class='node action {highlightedClass}' style='left: {node.GetAbsoluteX(allNodes)}px; top: {node.GetAbsoluteY(allNodes)}px;'>{node.Content}</div>",
+			_ => ""
+		};
+
+		contentBuilder.Append(nodeContent);
+		return new MarkupString(contentBuilder.ToString());
+	}
+
+
+	List<FlowNode> allNodes = new List<FlowNode>();
+
+	private MarkupString RenderAllNodes()
+	{
+		StringBuilder allNodeContent = new StringBuilder();
+
+		foreach (var node in allNodes)
+		{
+			allNodeContent.Append(RenderNode(node).ToString());
+		}
+
+		return new MarkupString(allNodeContent.ToString());
+	}
+
+
+
+	private MarkupString RenderAllArrows()
+	{
+		StringBuilder allArrowsContent = new StringBuilder();
+
+		foreach (var node in allNodes)
+		{
+			allArrowsContent.Append(RenderArrow(node).ToString());		
+		}
+
+		return new MarkupString(allArrowsContent.ToString());
+	}
+
+	private string RenderArrow(FlowNode node)
+	{
+		StringBuilder arrowBuilder = new StringBuilder();
+		foreach (Child childNode in node.Children)
+		{
+			int startX = node.GetAbsoluteX(allNodes) + 10;
+			int startY = node.GetAbsoluteY(allNodes) + 10;
+			int endX = childNode.Node.GetAbsoluteX(allNodes) + 10;
+			int endY = childNode.Node.GetAbsoluteY(allNodes) + 10;
+
+			int horizontalLength = endX - startX;
+			int verticalLength = endY - startY;
+
+			string highlightedClass = childNode.IsHighlightedLine ? "highlighted" : "";
+
+			// 세로로 절반 내림
+			int halfVertical = verticalLength / 2;
+			arrowBuilder.Append($"<div class='line {highlightedClass}' style='left:{startX}px; top:{startY}px; height:{Math.Abs(halfVertical)}px;'></div>");
+
+			// 가로로 그림 (90도 회전)
+			if (horizontalLength > 0)
+			{
+				arrowBuilder.Append($"<div class='line {highlightedClass}' style='left:{startX}px; top:{startY + halfVertical}px; height:{horizontalLength}px; transform: rotate(-90deg); transform-origin: left top;'></div>");
+			}
+			else if (horizontalLength < 0)
+			{
+				arrowBuilder.Append($"<div class='line {highlightedClass}' style='left:{startX}px; top:{startY + halfVertical}px; height:{Math.Abs(horizontalLength)}px; transform: rotate(90deg); transform-origin: left top;'></div>");
+			}
+
+			// 세로로 나머지 그림
+			arrowBuilder.Append($"<div class='line {highlightedClass}' style='left:{endX}px; top:{startY + halfVertical}px; height:{Math.Abs(halfVertical)}px;'></div>");
+
+			// ArrowLabel이 null이 아니면 선 중앙에 라벨 추가
+			if (childNode.ArrowLabel != null)
+			{
+				int midX = startX + horizontalLength / 2;
+				int midY = startY + halfVertical;
+				arrowBuilder.Append($"<div class='arrow-label' style='left:{midX}px; top:{midY}px;'>{childNode.ArrowLabel}</div>");
+			}
+		}
+
+		return arrowBuilder.ToString();
+	}
+
+
+
+
+
+
+	// 멤버 변수 선언
+	private List<MoveInfo> DangerousMoves;
+	private List<int> explosionIds;
+	private List<int> giftIds;
+
+	// 라이프사이클 메서드
+	protected override async Task OnInitializedAsync()
+	{
+		DangerousMoves = await MoveInfoService.LoadDangerousMovesAsync();
+
+		// Filter the MoveId based on Tier or TierName
+		explosionIds = DangerousMoves.Where(m => m.TierName == "사용 절대금지" && m.Category == "폭발기술")
+										.Select(m => m.MoveId)
+										.ToList();
+
+		giftIds = DangerousMoves.Where(m => m.TierName == "사용 절대금지" && m.Category == "희생변화기")
+								.Select(m => m.MoveId)
+								.ToList();
+	}
+	public void CreateFlowChartExample()
+	{
+		FlowNode startNode = new FlowNode
+			{
+				Type = NodeType.Start,
+				Content = "시작",
+				X = 800,
+				Y = 100,
+			};
+		allNodes.Add(startNode);
+
+		// 결정 노드 생성
+		FlowNode decision1 = new FlowNode
+			{
+				Type = NodeType.Decision,
+				Content = "폭발기 보유?",
+				X = 0,
+				Y = 100,
+			};
+		allNodes.Add(decision1);
+
+		var decision1_1 = new FlowNode
+			{
+				Type = NodeType.Decision,
+				Content = "특성 무시",
+				X = -450,
+				Y = 100,
+			};
+		allNodes.Add(decision1_1);
+		var decision1_1_action1 = new FlowNode
+			{
+				Type = NodeType.Action,
+				Content = "봉인 교체\n앙코르 동료만들기",
+				X = -150,
+				Y = 100,
+			};
+		allNodes.Add(decision1_1_action1);
+		var decision1_1_action2 = new FlowNode
+			{
+				Type = NodeType.Action,
+				Content = "습기 특성 선두",
+				X = 0,
+				Y = 200,
+			};
+		allNodes.Add(decision1_1_action2);
+		var decision2 = new FlowNode
+			{
+				Type = NodeType.Decision,
+				Content = "자기희생기 보유?",
+				X = 0,
+				Y = 300,
+			};
+		allNodes.Add(decision2);
+
+
+
+
+		startNode.Children.Add(new Child(decision1, null, null));
+
+		decision1.Children.Add(new Child(decision1_1, (pokemon) => CheckMoves(pokemon, explosionIds), "Yes"));
+		decision1.Children.Add(new Child(decision2, (pokemon) => !CheckMoves(pokemon, explosionIds), "No"));
+		//decision2.Children.Add(new Child(decision2, (pokemon) => CheckMoves(pokemon, giftIds), "Yes!"));
+
+		decision1_1.Children.Add(new Child(decision1_1_action1, null, null));
+		decision1_1.Children.Add(new Child(decision1_1_action2, null, null));
+		decision1_1_action1.Children.Add(new Child(decision1_1_action2, null, null));
+		decision1_1_action2.Children.Add(new Child(decision2, null, null));
+
+
+	}
+	public static bool CheckMoves(WildPokemon pokemon, List<int> ids)
+	{
+		return ids.Contains(pokemon.Move1) || ids.Contains(pokemon.Move2) || ids.Contains(pokemon.Move3) || ids.Contains(pokemon.Move4);
+	}
+
+	public void RunSimulation(WildPokemon pokemon)
+	{
+		// 하이라이트 초기화
+		foreach(FlowNode node in allNodes)
+		{
+			node.IsHighlighted = false;
+			foreach (Child child in node.Children)
+			{
+				child.IsHighlightedLine = false;
+			}
+		}
+
+		selectedPokemon = pokemon;
+
+		FlowNode startNode = allNodes.FirstOrDefault(node => node.Type == NodeType.Start);
+		if (startNode != null)
+		{
+			GenerateSimulation(startNode, pokemon);
+		}
+	}
+
+
+
+	public void GenerateSimulation(FlowNode currentNode, WildPokemon pokemon)
+	{
+		// 현재 노드를 하이라이트
+		currentNode.IsHighlighted = true;
+
+		int nextNode = 0;
+
+		// 현재 노드가 결정 노드인 경우
+		if (currentNode.Type == NodeType.Decision)
+		{
+			for (int i = 0; i < currentNode.Children.Count; i++)
+			{
+				if (currentNode.Children[i].Condition != null &&
+					currentNode.Children[i].Condition.Invoke(pokemon))
+				{
+					nextNode = i;
+					currentNode.Children[i].IsHighlightedLine = true;
+					break;
+				}
+			}
+		}
+
+		if (currentNode.Children.Count == 0)
+		{
+			return;
+		}
+		else
+		{
+			GenerateSimulation(currentNode.Children[nextNode].Node, pokemon);
+		}
+	}
+
 
 
 }

@@ -12,7 +12,7 @@ namespace PokemonSearchMoveset.Services
         
         // 로딩 관련
 		public int LoadedItemsCount { get; private set; } = 0;
-        public int TotalItemsCount { get; private set; } = 14; // CSV 파일의 수 (예: 11)
+        public int TotalItemsCount { get; private set; } = 17; // CSV 파일의 수 (예: 11)
         public int LoadingProgress => (int)((float)LoadedItemsCount / TotalItemsCount * 100);
         public event Action OnDataLoadProgress;
 
