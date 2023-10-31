@@ -15,24 +15,22 @@
 @using System.Collections.Generic
 
 <div class="flow-chart-wrapper">
-	<div class="pokemon-info">
-		@if (selectedPokemon != null)
-		{
-			<span>@selectedPokemon.Name - 레벨: @selectedPokemon.Level</span>
-		}
-		else
-		{
-			<span>선택한 포켓몬이 없습니다.</span>
-		}
 
-	</div>
 	<div class="flow-chart">
-		@RenderAllNodes()
-		@RenderAllArrows()
+		@RenderAllElements()
 	</div>
 </div>
+<div class="pokemon-info">
+	@if (selectedPokemon != null)
+	{
+		<span>@selectedPokemon.Name - 레벨: @selectedPokemon.Level</span>
+	}
+	else
+	{
+		<span>선택한 포켓몬이 없습니다.</span>
+	}
 
-
+</div>
 
 <InputFile OnChange="LoadCsvData" />
 <b></b>
@@ -301,111 +299,102 @@
 		}
 	}
 
-	private MarkupString RenderNode(FlowNode node)
+
+	private string RenderNode(FlowNode node)
 	{
-		if (node == null) return new MarkupString("");
+		if (node == null) return "";
 
 		StringBuilder contentBuilder = new StringBuilder();
-		string highlightedClass = "";
+		string highlightedClass = node.IsHighlighted ? "highlighted" : "";
 
-		if (node.Type == NodeType.Decision)
-		{
-			highlightedClass = node.IsHighlighted ? "highlighted-decision" : "";
-
-		}
-		else
-		{
-			highlightedClass = node.IsHighlighted ? "highlighted" : "";
-
-		}
+		int x = node.GetAbsoluteX(allNodes);
+		int y = node.GetAbsoluteY(allNodes);
 
 		string nodeContent = node.Type switch
 		{
-			NodeType.Start => $"<div class='node start {highlightedClass}' style='left: {node.GetAbsoluteX(allNodes)}px; top: {node.GetAbsoluteY(allNodes)}px;'>{node.Content}</div>",
-			NodeType.Decision => $"<div class='node decision-container' style='left: {node.GetAbsoluteX(allNodes)}px; top: {node.GetAbsoluteY(allNodes)}px;'><div class='decision {highlightedClass}'></div><div class='decision-content'>{node.Content}</div></div>",
-			NodeType.Action => $"<div class='node action {highlightedClass}' style='left: {node.GetAbsoluteX(allNodes)}px; top: {node.GetAbsoluteY(allNodes)}px;'>{node.Content}</div>",
+			NodeType.Start => $"<rect x='{x - 50}' y='{y - 20}' width='100' height='40' class='node start {highlightedClass}' stroke-dasharray='{dashArray}'></rect><text x='{x}' y='{y}' class='node-text' text-anchor='middle' dominant-baseline='middle'>{node.Content}</text>",
+			NodeType.Decision => $"<polygon points='{x - 0},{y-50} {x + 100},{y + 0} {x - 0},{y + 50} {x - 100},{y + 0}' class='node decision {highlightedClass}' stroke-dasharray='{dashArray}'></polygon><text x='{x}' y='{y + 0}' class='node-text' text-anchor='middle' dominant-baseline='middle'>{node.Content}</text>",
+			NodeType.Action => $"<rect x='{x - 60}' y='{y - 30}' width='120' height='60' class='node action {highlightedClass}' stroke-dasharray='{dashArray}'></rect><text x='{x}' y='{y}' class='node-text' text-anchor='middle' dominant-baseline='middle'>{node.Content}</text>",
 			_ => ""
 		};
 
-		contentBuilder.Append(nodeContent);
-		return new MarkupString(contentBuilder.ToString());
+		return nodeContent;
 	}
 
 
 	List<FlowNode> allNodes = new List<FlowNode>();
 
-	private MarkupString RenderAllNodes()
-	{
-		StringBuilder allNodeContent = new StringBuilder();
 
-		foreach (var node in allNodes)
-		{
-			allNodeContent.Append(RenderNode(node).ToString());
-		}
-
-		return new MarkupString(allNodeContent.ToString());
-	}
-
-
-
-	private MarkupString RenderAllArrows()
-	{
-		StringBuilder allArrowsContent = new StringBuilder();
-
-		foreach (var node in allNodes)
-		{
-			allArrowsContent.Append(RenderArrow(node).ToString());		
-		}
-
-		return new MarkupString(allArrowsContent.ToString());
-	}
-
-	private string RenderArrow(FlowNode node)
+	private string RenderArrow(FlowNode node, bool isHighlightOnly)
 	{
 		StringBuilder arrowBuilder = new StringBuilder();
+
 		foreach (Child childNode in node.Children)
 		{
-			int startX = node.GetAbsoluteX(allNodes) + 10;
-			int startY = node.GetAbsoluteY(allNodes) + 10;
-			int endX = childNode.Node.GetAbsoluteX(allNodes) + 10;
-			int endY = childNode.Node.GetAbsoluteY(allNodes) + 10;
-
-			int horizontalLength = endX - startX;
-			int verticalLength = endY - startY;
-
-			string highlightedClass = childNode.IsHighlightedLine ? "highlighted" : "";
-
-			// 세로로 절반 내림
-			int halfVertical = verticalLength / 2;
-			arrowBuilder.Append($"<div class='line {highlightedClass}' style='left:{startX}px; top:{startY}px; height:{Math.Abs(halfVertical)}px;'></div>");
-
-			// 가로로 그림 (90도 회전)
-			if (horizontalLength > 0)
+			if (childNode.IsHighlightedLine == isHighlightOnly)
 			{
-				arrowBuilder.Append($"<div class='line {highlightedClass}' style='left:{startX}px; top:{startY + halfVertical}px; height:{horizontalLength}px; transform: rotate(-90deg); transform-origin: left top;'></div>");
-			}
-			else if (horizontalLength < 0)
-			{
-				arrowBuilder.Append($"<div class='line {highlightedClass}' style='left:{startX}px; top:{startY + halfVertical}px; height:{Math.Abs(horizontalLength)}px; transform: rotate(90deg); transform-origin: left top;'></div>");
-			}
+				int startX = node.GetAbsoluteX(allNodes);
+				int startY = node.GetAbsoluteY(allNodes);
+				int endX = childNode.Node.GetAbsoluteX(allNodes);
+				int endY = childNode.Node.GetAbsoluteY(allNodes);
 
-			// 세로로 나머지 그림
-			arrowBuilder.Append($"<div class='line {highlightedClass}' style='left:{endX}px; top:{startY + halfVertical}px; height:{Math.Abs(halfVertical)}px;'></div>");
+				int horizontalLength = endX - startX;
+				int verticalLength = endY - startY;
+				int halfVertical = verticalLength / 2;
 
-			// ArrowLabel이 null이 아니면 선 중앙에 라벨 추가
-			if (childNode.ArrowLabel != null)
-			{
-				int midX = startX + horizontalLength / 2;
-				int midY = startY + halfVertical;
-				arrowBuilder.Append($"<div class='arrow-label' style='left:{midX}px; top:{midY}px;'>{childNode.ArrowLabel}</div>");
+				string highlightedClass = childNode.IsHighlightedLine ? "highlighted" : "";
+
+				string pathData = $"M {startX} {startY} ";
+				pathData += $"v {halfVertical} ";
+
+				if (horizontalLength != 0)
+				{
+					pathData += $"h {horizontalLength} ";
+				}
+
+				pathData += $"v {halfVertical}";
+
+				arrowBuilder.Append($"<path d='{pathData}' class='path {highlightedClass}'  />");
+
+				if (childNode.ArrowLabel != null)
+				{
+					int midX = startX + horizontalLength / 2;
+					int midY = startY + halfVertical;
+					arrowBuilder.Append($"<text x='{midX}' y='{midY}' class='arrow-label'>{childNode.ArrowLabel}</text>");
+				}
 			}
 		}
 
 		return arrowBuilder.ToString();
 	}
 
+	private MarkupString RenderAllElements()
+	{
+		StringBuilder allElementsContent = new StringBuilder();
+		allElementsContent.Append($"<svg viewBox='0 0 1600 900'>"); // 1600x900 크기에 맞춰 viewBox 설정
 
+		// 먼저 모든 화살표를 그립니다.
+		// 먼저 highlighted가 아닌 화살표를 그린다.
+		foreach (var node in allNodes)
+		{
+			allElementsContent.Append(RenderArrow(node, false).ToString());
+		}
 
+		// 그 다음 highlighted 화살표를 그린다.
+		foreach (var node in allNodes)
+		{
+			allElementsContent.Append(RenderArrow(node, true).ToString());
+		}
+
+		// 다음으로 모든 노드를 그립니다.
+		foreach (var node in allNodes)
+		{
+			allElementsContent.Append(RenderNode(node));
+		}
+
+		allElementsContent.Append("</svg>");
+		return new MarkupString(allElementsContent.ToString());
+	}
 
 
 
@@ -452,33 +441,41 @@
 		var decision1_1 = new FlowNode
 			{
 				Type = NodeType.Decision,
-				Content = "특성 무시",
+				Content = "화학변화가스?",
 				X = -450,
 				Y = 100,
 			};
 		allNodes.Add(decision1_1);
-		var decision1_1_action1 = new FlowNode
+		var decision1_1_yes1 = new FlowNode
 			{
 				Type = NodeType.Action,
-				Content = "봉인 교체\n앙코르 동료만들기",
+				Content = "흔들풍손 봉인",
 				X = -150,
 				Y = 100,
 			};
-		allNodes.Add(decision1_1_action1);
-		var decision1_1_action2 = new FlowNode
+		allNodes.Add(decision1_1_yes1);
+		var decision1_1_yes2 = new FlowNode
 			{
 				Type = NodeType.Action,
-				Content = "습기 특성 선두",
+				Content = "드레디어 앙코르 동료만들기",
 				X = 0,
+				Y = 100,
+			};
+		allNodes.Add(decision1_1_yes2);
+		var decision1_1_no1 = new FlowNode
+			{
+				Type = NodeType.Action,
+				Content = "골덕 선두",
+				X = 150,
 				Y = 200,
 			};
-		allNodes.Add(decision1_1_action2);
+		allNodes.Add(decision1_1_no1);
 		var decision2 = new FlowNode
 			{
 				Type = NodeType.Decision,
 				Content = "자기희생기 보유?",
 				X = 0,
-				Y = 300,
+				Y = 400,
 			};
 		allNodes.Add(decision2);
 
@@ -491,16 +488,25 @@
 		decision1.Children.Add(new Child(decision2, (pokemon) => !CheckMoves(pokemon, explosionIds), "No"));
 		//decision2.Children.Add(new Child(decision2, (pokemon) => CheckMoves(pokemon, giftIds), "Yes!"));
 
-		decision1_1.Children.Add(new Child(decision1_1_action1, null, null));
-		decision1_1.Children.Add(new Child(decision1_1_action2, null, null));
-		decision1_1_action1.Children.Add(new Child(decision1_1_action2, null, null));
-		decision1_1_action2.Children.Add(new Child(decision2, null, null));
+		decision1_1.Children.Add(new Child(decision1_1_yes1, null, "Yes"));
+		decision1_1.Children.Add(new Child(decision1_1_no1, null, "No"));
+		decision1_1_yes1.Children.Add(new Child(decision1_1_yes2, null, null));
+		decision1_1_yes2.Children.Add(new Child(decision2, null, null));
+		decision1_1_no1.Children.Add(new Child(decision2, null, null));
 
 
 	}
 	public static bool CheckMoves(WildPokemon pokemon, List<int> ids)
 	{
 		return ids.Contains(pokemon.Move1) || ids.Contains(pokemon.Move2) || ids.Contains(pokemon.Move3) || ids.Contains(pokemon.Move4);
+	}
+	public static bool CheckAbility(WildPokemon pokemon, List<int> ids)
+	{
+		return ids.Contains(pokemon.Ability);
+	}
+	public static bool CheckType(WildPokemon pokemon, string type)
+	{
+		return pokemon.Type1 == type;
 	}
 
 	public void RunSimulation(WildPokemon pokemon)
@@ -542,7 +548,6 @@
 					currentNode.Children[i].Condition.Invoke(pokemon))
 				{
 					nextNode = i;
-					currentNode.Children[i].IsHighlightedLine = true;
 					break;
 				}
 			}
@@ -554,6 +559,8 @@
 		}
 		else
 		{
+			currentNode.Children[nextNode].IsHighlightedLine = true;
+
 			GenerateSimulation(currentNode.Children[nextNode].Node, pokemon);
 		}
 	}
@@ -561,3 +568,4 @@
 
 
 }
+
