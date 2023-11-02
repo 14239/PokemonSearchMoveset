@@ -34,7 +34,7 @@
 
 <InputFile OnChange="LoadCsvData" />
 <b></b>
-<MudButton Variant="Variant.Filled" Color="Color.Primary" >시뮬레이션</MudButton>
+<MudButton Variant="Variant.Filled" Color="Color.Primary">시뮬레이션</MudButton>
 
 @if (wildPokemons != null && wildPokemons.Count > 0)
 {
@@ -312,9 +312,9 @@
 
 		string nodeContent = node.Type switch
 		{
-			NodeType.Start => $"<rect x='{x - 50}' y='{y - 20}' width='100' height='40' class='node start {highlightedClass}' stroke-dasharray='{dashArray}'></rect><text x='{x}' y='{y}' class='node-text' text-anchor='middle' dominant-baseline='middle'>{node.Content}</text>",
-			NodeType.Decision => $"<polygon points='{x - 0},{y-50} {x + 100},{y + 0} {x - 0},{y + 50} {x - 100},{y + 0}' class='node decision {highlightedClass}' stroke-dasharray='{dashArray}'></polygon><text x='{x}' y='{y + 0}' class='node-text' text-anchor='middle' dominant-baseline='middle'>{node.Content}</text>",
-			NodeType.Action => $"<rect x='{x - 60}' y='{y - 30}' width='120' height='60' class='node action {highlightedClass}' stroke-dasharray='{dashArray}'></rect><text x='{x}' y='{y}' class='node-text' text-anchor='middle' dominant-baseline='middle'>{node.Content}</text>",
+			NodeType.Start => $"<rect x='{x - 50}' y='{y - 20}' width='100' height='40' class='node start {highlightedClass}' ></rect><text x='{x}' y='{y}' class='node-text' text-anchor='middle' dominant-baseline='middle'>{node.Content}</text>",
+			NodeType.Decision => $"<polygon points='{x - 0},{y - 50} {x + 100},{y + 0} {x - 0},{y + 50} {x - 100},{y + 0}' class='node decision {highlightedClass}'></polygon><text x='{x}' y='{y + 0}' class='node-text' text-anchor='middle' dominant-baseline='middle'>{node.Content}</text>",
+			NodeType.Action => $"<rect x='{x - 60}' y='{y - 30}' width='120' height='60' class='node action {highlightedClass}'></rect><text x='{x}' y='{y}' class='node-text' text-anchor='middle' dominant-baseline='middle'>{node.Content}</text>",
 			_ => ""
 		};
 
@@ -400,15 +400,25 @@
 
 	// 멤버 변수 선언
 	private List<MoveInfo> DangerousMoves;
+	private List<AbilityInfo> DangerousAbilities;
+
+	private List<int> ghostIds; // 목숨걸기, 교체불가 기술
 	private List<int> explosionIds;
 	private List<int> giftIds;
+
+	private List<int> gasIds;
+	private List<int> tauntImmuneIds;
 
 	// 라이프사이클 메서드
 	protected override async Task OnInitializedAsync()
 	{
 		DangerousMoves = await MoveInfoService.LoadDangerousMovesAsync();
+		DangerousAbilities = await MoveInfoService.LoadDangerousAbilitiesAsync();
 
 		// Filter the MoveId based on Tier or TierName
+		ghostIds = DangerousMoves.Where(m => m.Category == "교체불가기술" || m.Category == "목숨걸기")
+								.Select(m => m.MoveId)
+								.ToList();
 		explosionIds = DangerousMoves.Where(m => m.TierName == "사용 절대금지" && m.Category == "폭발기술")
 										.Select(m => m.MoveId)
 										.ToList();
@@ -416,6 +426,14 @@
 		giftIds = DangerousMoves.Where(m => m.TierName == "사용 절대금지" && m.Category == "희생변화기")
 								.Select(m => m.MoveId)
 								.ToList();
+
+		gasIds = DangerousAbilities.Where(a => a.AbilityName == "화학변화가스")
+								.Select(a => a.AbilityId)
+								.ToList();
+		tauntImmuneIds = DangerousAbilities.Where(a => a.Category == "도발불가")
+						.Select(a => a.AbilityId)
+						.ToList();
+
 	}
 	public void CreateFlowChartExample()
 	{
@@ -428,82 +446,111 @@
 			};
 		allNodes.Add(startNode);
 
-		// 결정 노드 생성
-		FlowNode decision1 = new FlowNode
+		var decision1 = new FlowNode
 			{
 				Type = NodeType.Decision,
-				Content = "폭발기 보유?",
+				Content = "목숨걸기나 교체불가기 보유?",
 				X = 0,
 				Y = 100,
 			};
 		allNodes.Add(decision1);
 
-		var decision1_1 = new FlowNode
+		var decision1_yes1 = new FlowNode
+			{
+				Type = NodeType.Action,
+				Content = "고스트 테라스탈",
+				X = -150,
+				Y = 100,
+			};
+		allNodes.Add(decision1_yes1);
+
+
+
+		// 결정 노드 생성
+		FlowNode decision2 = new FlowNode
+			{
+				Type = NodeType.Decision,
+				Content = "폭발기 보유?",
+				X = 0,
+				Y = 200,
+			};
+		allNodes.Add(decision2);
+
+		var decision2_1 = new FlowNode
 			{
 				Type = NodeType.Decision,
 				Content = "화학변화가스?",
 				X = -450,
 				Y = 100,
 			};
-		allNodes.Add(decision1_1);
-		var decision1_1_yes1 = new FlowNode
+		allNodes.Add(decision2_1);
+		var decision2_1_yes1 = new FlowNode
 			{
 				Type = NodeType.Action,
 				Content = "흔들풍손 봉인",
 				X = -150,
 				Y = 100,
 			};
-		allNodes.Add(decision1_1_yes1);
-		var decision1_1_yes2 = new FlowNode
+		allNodes.Add(decision2_1_yes1);
+		var decision2_1_yes2 = new FlowNode
 			{
 				Type = NodeType.Action,
 				Content = "드레디어 앙코르 동료만들기",
 				X = 0,
 				Y = 100,
 			};
-		allNodes.Add(decision1_1_yes2);
-		var decision1_1_no1 = new FlowNode
+		allNodes.Add(decision2_1_yes2);
+		var decision2_1_no1 = new FlowNode
 			{
 				Type = NodeType.Action,
 				Content = "골덕 선두",
 				X = 150,
 				Y = 200,
 			};
-		allNodes.Add(decision1_1_no1);
-		var decision2 = new FlowNode
+		allNodes.Add(decision2_1_no1);
+		
+
+		var decision3 = new FlowNode
 			{
 				Type = NodeType.Decision,
 				Content = "자기희생기 보유?",
 				X = 0,
 				Y = 400,
 			};
-		allNodes.Add(decision2);
-
+		allNodes.Add(decision3);
 
 
 
 		startNode.Children.Add(new Child(decision1, null, null));
 
-		decision1.Children.Add(new Child(decision1_1, (pokemon) => CheckMoves(pokemon, explosionIds), "Yes"));
-		decision1.Children.Add(new Child(decision2, (pokemon) => !CheckMoves(pokemon, explosionIds), "No"));
-		//decision2.Children.Add(new Child(decision2, (pokemon) => CheckMoves(pokemon, giftIds), "Yes!"));
+		decision1.Children.Add(new Child(decision1_yes1, (pokemon) => CheckMoves(pokemon, ghostIds), "Yes"));
+		decision1.Children.Add(new Child(decision2, (pokemon) => !CheckMoves(pokemon, ghostIds), "No"));
+		decision1_yes1.Children.Add(new Child(decision2, null, null));
 
-		decision1_1.Children.Add(new Child(decision1_1_yes1, null, "Yes"));
-		decision1_1.Children.Add(new Child(decision1_1_no1, null, "No"));
-		decision1_1_yes1.Children.Add(new Child(decision1_1_yes2, null, null));
-		decision1_1_yes2.Children.Add(new Child(decision2, null, null));
-		decision1_1_no1.Children.Add(new Child(decision2, null, null));
+
+		decision2.Children.Add(new Child(decision2_1, (pokemon) => CheckMoves(pokemon, explosionIds), "Yes"));
+		decision2.Children.Add(new Child(decision3, (pokemon) => !CheckMoves(pokemon, explosionIds), "No"));
+
+		decision2_1.Children.Add(new Child(decision2_1_yes1, (pokemon) => CheckAbilities(pokemon, gasIds), "Yes"));
+		decision2_1.Children.Add(new Child(decision2_1_no1, (pokemon) => !CheckAbilities(pokemon, gasIds), "No"));
+		decision2_1_yes1.Children.Add(new Child(decision2_1_yes2, null, null));
+		decision2_1_yes2.Children.Add(new Child(decision3, null, null));
+		decision2_1_no1.Children.Add(new Child(decision3, null, null));
 
 
 	}
 	public static bool CheckMoves(WildPokemon pokemon, List<int> ids)
 	{
+		if (ids == null || ids.Count == 0) return false;
 		return ids.Contains(pokemon.Move1) || ids.Contains(pokemon.Move2) || ids.Contains(pokemon.Move3) || ids.Contains(pokemon.Move4);
 	}
-	public static bool CheckAbility(WildPokemon pokemon, List<int> ids)
+
+	public static bool CheckAbilities(WildPokemon pokemon, List<int> ids)
 	{
+		if (ids == null || ids.Count == 0) return false;
 		return ids.Contains(pokemon.Ability);
 	}
+
 	public static bool CheckType(WildPokemon pokemon, string type)
 	{
 		return pokemon.Type1 == type;
@@ -512,7 +559,7 @@
 	public void RunSimulation(WildPokemon pokemon)
 	{
 		// 하이라이트 초기화
-		foreach(FlowNode node in allNodes)
+		foreach (FlowNode node in allNodes)
 		{
 			node.IsHighlighted = false;
 			foreach (Child child in node.Children)

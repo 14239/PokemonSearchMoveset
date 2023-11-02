@@ -181,6 +181,7 @@
     <None Include="wwwroot\database\super_contest_combos.csv" />
     <None Include="wwwroot\database\super_contest_effects.csv" />
     <None Include="wwwroot\database\super_contest_effect_prose.csv" />
+    <None Include="wwwroot\database\translations\cs.csv" />
     <None Include="wwwroot\database\types.csv" />
     <None Include="wwwroot\database\type_efficacy.csv" />
     <None Include="wwwroot\database\type_efficacy_past.csv" />

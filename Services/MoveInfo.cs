@@ -43,4 +43,32 @@ public class MoveInfoService
 
 		return dangerousMoves;
 	}
+
+	public async Task<List<AbilityInfo>> LoadDangerousAbilitiesAsync()
+	{
+		List<AbilityInfo> dangerousAbilitiess = new List<AbilityInfo>();
+
+		// 파일 내용을 문자열로 받아옵니다.
+		var csvData = await _httpClient.GetStringAsync("psmdata/dangerabilities.csv");
+
+		using (var reader = new StringReader(csvData))
+		{
+			reader.ReadLine();
+			string line;
+			while ((line = reader.ReadLine()) != null)
+			{
+				string[] parts = line.Split(',');
+				AbilityInfo abilityInfo = new AbilityInfo
+				{
+					Category = parts[0],
+					AbilityName = parts[1],
+					AbilityId = int.Parse(parts[2]),
+					ChangeMethod = parts[3]
+				};
+				dangerousAbilitiess.Add(abilityInfo);
+			}
+		}
+
+		return dangerousAbilitiess;
+	}
 }

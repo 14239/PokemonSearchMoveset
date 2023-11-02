@@ -63,3 +63,12 @@ public class MoveInfo
     public string MoveName { get; set; }
     public int MoveId { get; set; }
 }
+
+public class AbilityInfo
+{
+	public string Category { get; set; }
+	public string AbilityName { get; set; }
+	public int AbilityId { get; set; }
+	public string ChangeMethod { get; set; }
+
+}
