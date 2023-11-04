@@ -195,6 +195,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Blazored.LocalStorage" Version="4.4.0" />
+    <PackageReference Include="BlazorPanzoom" Version="0.2.1" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="7.0.10" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="7.0.10" PrivateAssets="all" />
     <PackageReference Include="MudBlazor" Version="6.11.0" />
