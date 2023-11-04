@@ -34,7 +34,7 @@
 
 <InputFile OnChange="LoadCsvData" />
 <b></b>
-<MudButton Variant="Variant.Filled" Color="Color.Primary">시뮬레이션</MudButton>
+<MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@UpdateDangerMoveCounts">시뮬레이션</MudButton>
 
 @if (wildPokemons != null && wildPokemons.Count > 0)
 {
@@ -55,6 +55,7 @@
 			<MudTh>Move2</MudTh>
 			<MudTh>Move3</MudTh>
 			<MudTh>Move4</MudTh>
+			<MudTh>DangerCount</MudTh>
 		</HeaderContent>
 		<RowTemplate>
 			<MudTd DataLabel="ID">@context.Id</MudTd>
@@ -67,6 +68,7 @@
 			<MudTd DataLabel="Move2">@context.Move2</MudTd>
 			<MudTd DataLabel="Move3">@context.Move3</MudTd>
 			<MudTd DataLabel="Move4">@context.Move4</MudTd>
+			<MudTd DataLabel="DangerCount">@context.DangerMoveCount</MudTd>
 			<MudTd><MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small" @onclick="(() => ShowLog(context))">Show Log</MudButton></MudTd>
 			<MudTd>
 				<MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small" @onclick="(() => RunSimulation(context))">Run Simulation</MudButton>
@@ -116,6 +118,7 @@
 	private List<PokemonTypeCSV> PokemonTypes = new List<PokemonTypeCSV>();
 	private List<TypeNameCSV> TypeNames = new List<TypeNameCSV>();
 	public List<MoveNameCSV> MoveNames { get; set; } = new List<MoveNameCSV>();
+	public static List<MoveCSV> Moves { get; set; } = new List<MoveCSV>();
 
 	// 필터링된 데이터를 저장할 변수를 추가합니다.
 	private List<PokemonMoveCSV> FilteredPokemonMoves { get; set; } = new List<PokemonMoveCSV>();
@@ -130,7 +133,10 @@
 		PokemonTypes = dataService.PokemonTypes;
 		TypeNames = dataService.TypeNames;
 		MoveNames = dataService.MoveNames;
+		Moves = dataService.Moves;
 		AbilityNames = dataService.AbilityNames;
+
+
 
 		FilteredPokemonMoves = AllPokemonMoves
 			.Where(pm =>
@@ -196,7 +202,7 @@
 		public int Move3 { get; set; }
 		public int Move4 { get; set; }
 		public PokemonLog Log { get; set; } = new PokemonLog(); // 로그 객체 포함
-
+		public string DangerMoveCount { get; set; }
 	}
 
 	private List<WildPokemon> wildPokemons { get; set; } = new List<WildPokemon>();
@@ -273,6 +279,8 @@
 		if (string.IsNullOrWhiteSpace(searchString))
 			return true;
 		if (pokemon.Name.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+			return true;
+		if (pokemon.DangerMoveCount.Contains(searchString, StringComparison.OrdinalIgnoreCase))
 			return true;
 		return false;
 	}
@@ -371,7 +379,7 @@
 	private MarkupString RenderAllElements()
 	{
 		StringBuilder allElementsContent = new StringBuilder();
-		allElementsContent.Append($"<svg viewBox='0 0 1600 900'>"); // 1600x900 크기에 맞춰 viewBox 설정
+		allElementsContent.Append($"<svg viewBox='0 0 16000 9000'>"); // 1600x900 크기에 맞춰 viewBox 설정
 
 		// 먼저 모든 화살표를 그립니다.
 		// 먼저 highlighted가 아닌 화살표를 그린다.
@@ -402,12 +410,16 @@
 	private List<MoveInfo> DangerousMoves;
 	private List<AbilityInfo> DangerousAbilities;
 
+	// 기술
 	private List<int> ghostIds; // 목숨걸기, 교체불가 기술
 	private List<int> explosionIds;
 	private List<int> giftIds;
 
+
+	// 특성
 	private List<int> gasIds;
 	private List<int> tauntImmuneIds;
+
 
 	// 라이프사이클 메서드
 	protected override async Task OnInitializedAsync()
@@ -508,26 +520,82 @@
 				Y = 200,
 			};
 		allNodes.Add(decision2_1_no1);
-		
+
 
 		var decision3 = new FlowNode
 			{
 				Type = NodeType.Decision,
-				Content = "자기희생기 보유?",
+				Content = "위험한 변화기 보유?",
 				X = 0,
 				Y = 400,
 			};
 		allNodes.Add(decision3);
 
+		var decision3_1 = new FlowNode
+			{
+				Type = NodeType.Decision,
+				Content = "4 변화기 포켓몬?",
+				X = -450,
+				Y = 100,
+			};
+		allNodes.Add(decision3_1);
+
+		var decision3_1_yes1 = new FlowNode
+			{
+				Type = NodeType.Action,
+				Content = "봉인 사용",
+				X = -150,
+				Y = 100,
+			};
+		allNodes.Add(decision3_1);
+
+		var decision3_2 = new FlowNode
+			{
+				Type = NodeType.Decision,
+				Content = "도발 무시 특성?",
+				X = 150,
+				Y = 100,
+			};
+		allNodes.Add(decision3_2);
+
+		var decision3_2_yes1 = new FlowNode
+			{
+				Type = NodeType.Action,
+				Content = "루차불 도발",
+				X = -150,
+				Y = 100,
+			};
+		allNodes.Add(decision3_2_yes1);
+
+		var decision3_2_no1 = new FlowNode
+			{
+				Type = NodeType.Action,
+				Content = "도발",
+				X = 150,
+				Y = 100,
+			};
+		allNodes.Add(decision3_2_no1);
 
 
+		var decision4 = new FlowNode
+			{
+				Type = NodeType.Decision,
+				Content = "위험한 공격기 보유?",
+				X = 0,
+				Y = 400,
+			};
+		allNodes.Add(decision4);
+
+
+		// 시작
 		startNode.Children.Add(new Child(decision1, null, null));
 
+		//목숨걸기 or 교체불가
 		decision1.Children.Add(new Child(decision1_yes1, (pokemon) => CheckMoves(pokemon, ghostIds), "Yes"));
 		decision1.Children.Add(new Child(decision2, (pokemon) => !CheckMoves(pokemon, ghostIds), "No"));
 		decision1_yes1.Children.Add(new Child(decision2, null, null));
 
-
+		// 자폭
 		decision2.Children.Add(new Child(decision2_1, (pokemon) => CheckMoves(pokemon, explosionIds), "Yes"));
 		decision2.Children.Add(new Child(decision3, (pokemon) => !CheckMoves(pokemon, explosionIds), "No"));
 
@@ -536,6 +604,14 @@
 		decision2_1_yes1.Children.Add(new Child(decision2_1_yes2, null, null));
 		decision2_1_yes2.Children.Add(new Child(decision3, null, null));
 		decision2_1_no1.Children.Add(new Child(decision3, null, null));
+
+		// 자기희생기
+
+		decision3.Children.Add(new Child(decision3_1, (pokemon) => CheckMoves(pokemon, giftIds), "Yes"));
+		decision3.Children.Add(new Child(decision4, (pokemon) => !CheckMoves(pokemon, giftIds), "No"));
+
+		decision3_2.Children.Add(new Child(decision3_2_yes1, (pokemon) => CheckAbilities(pokemon, tauntImmuneIds), "Yes"));
+		decision3_2.Children.Add(new Child(decision3_2_no1, (pokemon) => !CheckAbilities(pokemon, tauntImmuneIds), "No"));
 
 
 	}
@@ -555,6 +631,42 @@
 	{
 		return pokemon.Type1 == type;
 	}
+
+	public static bool Check4StatusMoves(WildPokemon pokemon)
+	{
+		// 각 move ID가 특수 공격인지 체크합니다.
+		var isSpecial = new Func<int, bool>(moveId =>
+			Moves.Any(move => move.Id == moveId && move.DamageClassId == 3));
+
+		// pokemon.Move1 ~ Move4 모두 특수 기술인지 체크합니다.
+		return isSpecial(pokemon.Move1) && isSpecial(pokemon.Move2) &&
+						isSpecial(pokemon.Move3) && isSpecial(pokemon.Move4);
+	}
+
+
+	private void CalculateDangerMoveCount(WildPokemon pokemon)
+	{
+		int dangerousMoveCount = 0;
+		List<int> dangerousMoveIds = DangerousMoves.Select(dm => dm.MoveId).ToList();
+
+		if (dangerousMoveIds.Contains(pokemon.Move1)) dangerousMoveCount++;
+		if (dangerousMoveIds.Contains(pokemon.Move2)) dangerousMoveCount++;
+		if (dangerousMoveIds.Contains(pokemon.Move3)) dangerousMoveCount++;
+		if (dangerousMoveIds.Contains(pokemon.Move4)) dangerousMoveCount++;
+
+		pokemon.DangerMoveCount = $"{dangerousMoveCount} 개";
+	}
+	private void UpdateDangerMoveCounts()
+	{
+		foreach (var pokemon in wildPokemons)
+		{
+			CalculateDangerMoveCount(pokemon);
+		}
+		StateHasChanged(); // UI 갱신을 트리거합니다.
+	}
+
+
+
 
 	public void RunSimulation(WildPokemon pokemon)
 	{

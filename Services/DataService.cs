@@ -37,9 +37,10 @@ namespace PokemonSearchMoveset.Services
         public List<VersionCSV> Versions = new List<VersionCSV>();
         public List<VersionNameCSV> VersionNames = new List<VersionNameCSV>();
         public List<MoveNameCSV> MoveNames = new List<MoveNameCSV>();
+        public List<MoveCSV> Moves = new List<MoveCSV>();
 
 
-        public DataService(HttpClient http)
+		public DataService(HttpClient http)
 		{
 			_http = http;
 		}
@@ -117,11 +118,14 @@ namespace PokemonSearchMoveset.Services
             LoadedItemsCount++;
             OnDataLoadProgress?.Invoke(); // 이벤트 발생
 
+			Moves = await CsvLoader.LoadMoves(_http, "database/moves.csv") ?? new List<MoveCSV>();
+			LoadedItemsCount++;
+			OnDataLoadProgress?.Invoke(); // 이벤트 발생
 
 
 
 
-            await Console.Out.WriteLineAsync("데이터 불러오기 종료");
+			await Console.Out.WriteLineAsync("데이터 불러오기 종료");
             OnDataLoadProgress?.Invoke(); // 이벤트 발생
 
             IsDataLoaded = true;  // 데이터 로딩 완료 후 true로 설정

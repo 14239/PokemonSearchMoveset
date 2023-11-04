@@ -111,30 +111,34 @@ namespace PokemonSearchMoveset.Services
             });
         }
 
-        public static async Task<List<MoveCSV>> LoadMoves(HttpClient http, string path)
-        {
-            var csvData = await http.GetStringAsync(path);
-            return ParseCsvData(csvData, tokens => new MoveCSV
-            {
-                Id = int.Parse(tokens[0]),
-                Identifier = tokens[1],
-                GenerationId = int.Parse(tokens[2]),
-                TypeId = int.Parse(tokens[3]),
-                Power = string.IsNullOrEmpty(tokens[4]) ? (int?)null : int.Parse(tokens[4]),
-                Pp = int.Parse(tokens[5]),
-                Accuracy = string.IsNullOrEmpty(tokens[6]) ? (int?)null : int.Parse(tokens[6]),
-                Priority = int.Parse(tokens[7]),
-                TargetId = int.Parse(tokens[8]),
-                DamageClassId = int.Parse(tokens[9]),
-                EffectId = int.Parse(tokens[10]),
-                EffectChance = string.IsNullOrEmpty(tokens[11]) ? (int?)null : int.Parse(tokens[11]),
-                ContestTypeId = int.Parse(tokens[12]),
-                ContestEffectId = int.Parse(tokens[13]),
-                SuperContestEffectId = int.Parse(tokens[14])
-            });
-        }
+		public static async Task<List<MoveCSV>> LoadMoves(HttpClient http, string path)
+		{
+			var csvData = await http.GetStringAsync(path);
+			return ParseCsvData(csvData, tokens => new MoveCSV
+			{
+				Id = int.TryParse(tokens[0], out var id) ? id : 0,
+				Identifier = tokens[1],
+				GenerationId = int.TryParse(tokens[2], out var genId) ? genId : 0,
+				TypeId = int.TryParse(tokens[3], out var typeId) ? typeId : 0,
+				Power = int.TryParse(tokens[4], out var power) ? (int?)power : 0,
+				Pp = int.TryParse(tokens[5], out var pp) ? pp : 0,
+				Accuracy = int.TryParse(tokens[6], out var accuracy) ? (int?)accuracy : 0,
+				Priority = int.TryParse(tokens[7], out var priority) ? priority : 0,
+				TargetId = int.TryParse(tokens[8], out var targetId) ? targetId : 0,
+				DamageClassId = int.TryParse(tokens[9], out var damageClassId) ? damageClassId : 0,
+				EffectId = int.TryParse(tokens[10], out var effectId) ? effectId : 0,
+				EffectChance = int.TryParse(tokens[11], out var effectChance) ? (int?)effectChance : 0,
+				ContestTypeId = int.TryParse(tokens[12], out var contestTypeId) ? contestTypeId : 0,
+				ContestEffectId = int.TryParse(tokens[13], out var contestEffectId) ? contestEffectId : 0,
+				SuperContestEffectId = int.TryParse(tokens[14], out var superContestEffectId) ? superContestEffectId : 0
+			});
+		}
 
-        public static async Task<List<MoveNameCSV>> LoadMoveNames(HttpClient http, string path)
+
+
+
+
+		public static async Task<List<MoveNameCSV>> LoadMoveNames(HttpClient http, string path)
         {
             var csvData = await http.GetStringAsync(path);
             return ParseCsvData(csvData, tokens => new MoveNameCSV

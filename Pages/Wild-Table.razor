@@ -303,6 +303,7 @@
                 .OrderByDescending(pm => pm.Level)
                 .ThenByDescending(pm => pm.Order)
                 .Take(4)
+                .Reverse()
                 .ToList();
 
             var abilities = GetAbilityNamesByPokemonId(matchedPokemon.Id);
