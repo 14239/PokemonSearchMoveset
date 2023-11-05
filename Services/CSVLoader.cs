@@ -69,8 +69,19 @@ namespace PokemonSearchMoveset.Services
                 Name = tokens[2]
             });
         }
+		public static async Task<List<PokemonStatCSV>> LoadPokemonStats(HttpClient http, string path)
+		{
+			var csvData = await http.GetStringAsync(path);
+			return ParseCsvData(csvData, tokens => new PokemonStatCSV
+			{
+				PokemonId = int.Parse(tokens[0]),
+				StatId = int.Parse(tokens[1]),
+				BaseStat = int.Parse(tokens[2]),
+				StatEffort = int.Parse(tokens[3]),
+			});
+		}
 
-        public static async Task<List<PokemonFormNameCSV>> LoadPokemonFormNames(HttpClient http, string path)
+		public static async Task<List<PokemonFormNameCSV>> LoadPokemonFormNames(HttpClient http, string path)
         {
             var csvData = await http.GetStringAsync(path);
             return ParseCsvData(csvData, tokens => new PokemonFormNameCSV

@@ -25,6 +25,7 @@ namespace PokemonSearchMoveset.Services
         public List<PokemonMoveCSV> AllPokemonMoves { get; set; } = new List<PokemonMoveCSV>();
 		public List<PokemonCSV> Pokemons { get; set; } = new List<PokemonCSV>();
 		public List<PokemonSpeciesNameCSV> PokemonNames { get; set; } = new List<PokemonSpeciesNameCSV>();
+		public List<PokemonStatCSV> PokemonStats { get; set; } = new List<PokemonStatCSV>();
 		public List<PokemonFormCSV> PokemonForms { get; set; } = new List<PokemonFormCSV>();
 		public List<PokemonFormNameCSV> PokemonFormNames = new List<PokemonFormNameCSV>();
 		public List<PokemonTypeCSV> PokemonTypes = new List<PokemonTypeCSV>();
@@ -62,7 +63,11 @@ namespace PokemonSearchMoveset.Services
             LoadedItemsCount++;
             OnDataLoadProgress?.Invoke(); // 이벤트 발생
 
-            PokemonNames = await CsvLoader.LoadPokemonNames(http: _http, path: "database/pokemon_species_names.csv");
+			PokemonStats = await CsvLoader.LoadPokemonStats(http: _http, path: "database/pokemon_stats.csv");
+			LoadedItemsCount++;
+			OnDataLoadProgress?.Invoke(); // 이벤트 발생
+
+			PokemonNames = await CsvLoader.LoadPokemonNames(http: _http, path: "database/pokemon_species_names.csv");
             LoadedItemsCount++;
             OnDataLoadProgress?.Invoke(); // 이벤트 발생
 

@@ -247,7 +247,6 @@ a, .btn-link {
 }
 
 .flow-chart {
-	z-index: 1;
 	display: flex;
 	height: 100vh;
 	flex-direction: column;
@@ -269,7 +268,6 @@ a, .btn-link {
 
 
 .pokemon-info {
-	position: absolute;
 	top: 0;
 	left: 0;
 	font-weight: bold;
@@ -315,3 +313,25 @@ a, .btn-link {
 	text-anchor: middle;
 	dominant-baseline: middle;
 }
+
+
+/* 플로우차트 로그 */
+.modal-overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background-color: rgba(0, 0, 0, 0.5); /* 반투명 검은색 배경 */
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.simple-modal {
+	background-color: white;
+	padding: 20px;
+	border-radius: 5px;
+	box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+

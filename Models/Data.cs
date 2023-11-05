@@ -50,6 +50,15 @@
 
     }
 
+    public class PokemonStatCSV
+    {
+        public int PokemonId { get; set;}
+        public int StatId { get; set;}
+        public int BaseStat { get; set; }
+        public int StatEffort { get; set; }
+	}
+
+
     public class PokemonFormNameCSV // (pokemon_species_names.csv)
     {
         public int PokemonFormId { get; set; }                 // 폼 번호 (안농ABC)

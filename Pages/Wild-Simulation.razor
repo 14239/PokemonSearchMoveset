@@ -37,7 +37,7 @@
 
 <InputFile OnChange="LoadCsvData" />
 <b></b>
-<MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@UpdateDangerMoveCounts">시뮬레이션</MudButton>
+<MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@SimulationAll">시뮬레이션</MudButton>
 
 @if (wildPokemons != null && wildPokemons.Count > 0)
 {
@@ -59,6 +59,8 @@
 			<MudTh>Move3</MudTh>
 			<MudTh>Move4</MudTh>
 			<MudTh>DangerCount</MudTh>
+			<MudTh>내구력</MudTh>
+
 		</HeaderContent>
 		<RowTemplate>
 			<MudTd DataLabel="ID">@context.Id</MudTd>
@@ -66,17 +68,19 @@
 			<MudTd DataLabel="Level">@context.Level</MudTd>
 			<MudTd DataLabel="Type1">@context.Type1</MudTd>
 			<MudTd DataLabel="Type2">@context.Type2</MudTd>
-			<MudTd DataLabel="Ability">@context.Ability</MudTd>
-			<MudTd DataLabel="Move1">@context.Move1</MudTd>
-			<MudTd DataLabel="Move2">@context.Move2</MudTd>
-			<MudTd DataLabel="Move3">@context.Move3</MudTd>
-			<MudTd DataLabel="Move4">@context.Move4</MudTd>
+			<MudTd DataLabel="Ability">@GetAbilityNameById(context.Ability)</MudTd>
+			<MudTd DataLabel="Move1">@GetMoveNameById(context.Move1)</MudTd>
+			<MudTd DataLabel="Move2">@GetMoveNameById(context.Move2)</MudTd>
+			<MudTd DataLabel="Move3">@GetMoveNameById(context.Move3)</MudTd>
+			<MudTd DataLabel="Move4">@GetMoveNameById(context.Move4)</MudTd>
 			<MudTd DataLabel="DangerCount">@context.DangerMoveCount</MudTd>
+			<MudTd DataLabel="내구력">@context.FlingSurvivalOutcome</MudTd>
 			<MudTd><MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small" @onclick="(() => ShowLog(context))">Show Log</MudButton></MudTd>
 			<MudTd>
 				<MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small" @onclick="(() => RunSimulation(context))">Run Simulation</MudButton>
 			</MudTd>
 		</RowTemplate>
+
 
 		<PagerContent>
 			<MudTablePager />
@@ -91,23 +95,24 @@
 	</div>
 }
 
-@if (selectedPokemon != null)
+@if (selectedPokemonForLog != null)
 {
-	<!-- 상세 정보 팝업 -->
-	<div class="modal">
-		<h3>@selectedPokemon.Name</h3>
-		<p>Level: @selectedPokemon.Level</p>
-		<p>Logs:</p>
-		<ul>
-			@foreach (var log in selectedPokemon.Log.TurnActions)
-			{
-				<li>@log</li>
-			}
-		</ul>
-		<!-- ... 다른 세부 정보 ... -->
-		<button @onclick="CloseModal">닫기</button>
+	<div class="modal-overlay" @onclick="CloseLogModal">
+		<div class="simple-modal">
+			<h3>@selectedPokemonForLog.Name</h3>
+			<p>Level: @selectedPokemonForLog.Level</p>
+			<p>Logs:</p>
+			<ul>
+				@foreach (var node in selectedPokemonForLog.NodeList)
+				{
+					<li>@node.Title</li>
+				}
+			</ul>
+			<button @onclick="CloseLogModal">닫기</button>
+		</div>
 	</div>
 }
+
 
 @code {
 	[Inject]
@@ -203,8 +208,13 @@
 		public int Move2 { get; set; }
 		public int Move3 { get; set; }
 		public int Move4 { get; set; }
+
+		public List<FlowNode> NodeList { get; set; } = new List<FlowNode>();
 		public PokemonLog Log { get; set; } = new PokemonLog(); // 로그 객체 포함
+
 		public string DangerMoveCount { get; set; }
+		public SurvivalOutcome FlingSurvivalOutcome { get; set; }
+
 	}
 
 	private List<WildPokemon> wildPokemons { get; set; } = new List<WildPokemon>();
@@ -291,14 +301,21 @@
 	private WildPokemon selectedPokemon = null;
 
 
+	private WildPokemon selectedPokemonForLog = null;
+
 	private void ShowLog(WildPokemon pokemon)
 	{
-		// 로그 표시 코드
+		selectedPokemonForLog = pokemon;
 	}
-	private void CloseModal()
+
+	private void CloseLogModal()
 	{
-		selectedPokemon = null;
+		selectedPokemonForLog = null;
+		StateHasChanged(); // UI 갱신을 트리거합니다.
 	}
+
+	// 기존의 CloseModal 메서드는 그대로 유지합니다.
+
 
 	// 플로우차트
 
@@ -314,9 +331,9 @@
 
 		string nodeContent = node.Type switch
 		{
-			NodeType.Start => $"<rect x='{x - 50}' y='{y - 20}' width='100' height='40' class='node start {highlightedClass}' ></rect><text x='{x}' y='{y}' class='node-text' text-anchor='middle' dominant-baseline='middle'>{node.Content}</text>",
-			NodeType.Decision => $"<polygon points='{x - 0},{y - 30} {x + 100},{y + 0} {x - 0},{y + 30} {x - 100},{y + 0}' class='node decision {highlightedClass}'></polygon><text x='{x}' y='{y + 0}' class='node-text' text-anchor='middle' dominant-baseline='middle'>{node.Content}</text>",
-			NodeType.Action => $"<rect x='{x - 60}' y='{y - 30}' width='120' height='60' class='node action {highlightedClass}'></rect><text x='{x}' y='{y}' class='node-text' text-anchor='middle' dominant-baseline='middle'>{node.Content}</text>",
+			NodeType.Start => $"<rect x='{x - 50}' y='{y - 20}' width='100' height='40' class='node start {highlightedClass}' ></rect><text x='{x}' y='{y}' class='node-text' text-anchor='middle' dominant-baseline='middle'>{node.Title}</text>",
+			NodeType.Decision => $"<polygon points='{x - 0},{y - 30} {x + 100},{y + 0} {x - 0},{y + 30} {x - 100},{y + 0}' class='node decision {highlightedClass}'></polygon><text x='{x}' y='{y + 0}' class='node-text' text-anchor='middle' dominant-baseline='middle'>{node.Title}</text>",
+			NodeType.Action => $"<rect x='{x - 60}' y='{y - 30}' width='120' height='60' class='node action {highlightedClass}'></rect><text x='{x}' y='{y}' class='node-text' text-anchor='middle' dominant-baseline='middle'>{node.Title}</text>",
 			_ => ""
 		};
 
@@ -382,8 +399,8 @@
 	{
 		StringBuilder allElementsContent = new StringBuilder();
 		allElementsContent.Append($"<svg viewBox='0 0 16000 9000'>"); // 1600x900 크기에 맞춰 viewBox 설정
-		// 먼저 모든 화살표를 그립니다.
-		// 먼저 highlighted가 아닌 화살표를 그린다.
+																			// 먼저 모든 화살표를 그립니다.
+																			// 먼저 highlighted가 아닌 화살표를 그린다.
 		foreach (var node in allNodes)
 		{
 			allElementsContent.Append(RenderArrow(node, false).ToString());
@@ -425,11 +442,18 @@
 	private List<int> ghostIds; // 목숨걸기, 교체불가 기술
 	private List<int> explosionIds;
 	private List<int> giftIds;
+	private List<int> defenseIds;
+	private List<int> recoilIds;
+	private List<int> thrashIds;
+	private List<int> priorityIds;
+	private List<int> burnIds;
+	private List<int> speedIds;
 
 
 	// 특성
 	private List<int> gasIds;
 	private List<int> tauntImmuneIds;
+	private List<int> unswapIds;
 
 
 	// 라이프사이클 메서드
@@ -452,6 +476,25 @@
 		giftIds = DangerousMoves.Where(m => m.TierName == "사용 절대금지" && m.Category == "희생변화기")
 								.Select(m => m.MoveId)
 								.ToList();
+		defenseIds = DangerousMoves.Where(m => m.Tier == 6)
+								.Select(m => m.MoveId)
+								.ToList();
+		recoilIds = DangerousMoves.Where(m => m.Tier == 11)
+								.Select(m => m.MoveId)
+								.ToList();
+		thrashIds = DangerousMoves.Where(m => m.Tier == 12)
+								.Select(m => m.MoveId)
+								.ToList();
+		priorityIds = DangerousMoves.Where(m => m.Tier == 8 || m.Tier == 9 || m.Tier == 10)
+								.Select(m => m.MoveId)
+								.ToList();
+		burnIds = DangerousMoves.Where(m => m.Tier == 4)
+								.Select(m => m.MoveId)
+								.ToList();
+		speedIds = DangerousMoves.Where(m => m.Tier == 3)
+								.Select(m => m.MoveId)
+								.ToList();
+
 
 		gasIds = DangerousAbilities.Where(a => a.AbilityName == "화학변화가스")
 								.Select(a => a.AbilityId)
@@ -459,14 +502,16 @@
 		tauntImmuneIds = DangerousAbilities.Where(a => a.Category == "도발불가")
 						.Select(a => a.AbilityId)
 						.ToList();
-
+		unswapIds = DangerousAbilities.Where(a => a.Category == "교체제한")
+						.Select(a => a.AbilityId)
+						.ToList();
 	}
 	public void CreateFlowChartExample()
 	{
 		FlowNode startNode = new FlowNode
 			{
 				Type = NodeType.Start,
-				Content = "시작",
+				Title = "시작",
 				X = 8000,
 				Y = 4000,
 			};
@@ -475,16 +520,16 @@
 		var decision1 = new FlowNode
 			{
 				Type = NodeType.Decision,
-				Content = "목숨걸기나 교체불가기 보유?",
+				Title = "목숨걸기나 교체불가기 보유?",
 				X = 0,
 				Y = 100,
 			};
 		allNodes.Add(decision1);
-		
+
 		var decision1_yes1 = new FlowNode
 			{
 				Type = NodeType.Action,
-				Content = "고스트 선두 or 테라스탈",
+				Title = "고스트 선두 or 테라스탈",
 				X = -150,
 				Y = 100,
 			};
@@ -496,7 +541,7 @@
 		FlowNode decision2 = new FlowNode
 			{
 				Type = NodeType.Decision,
-				Content = "폭발기 보유?",
+				Title = "폭발기 보유?",
 				X = 0,
 				Y = 200,
 			};
@@ -505,31 +550,31 @@
 		var decision2_1 = new FlowNode
 			{
 				Type = NodeType.Decision,
-				Content = "화학변화가스?",
-				X = 800,
+				Title = "화학변화가스?",
+				X = 600,
 				Y = 100,
 			};
 		allNodes.Add(decision2_1);
 		var decision2_1_yes1 = new FlowNode
 			{
 				Type = NodeType.Action,
-				Content = "흔들풍손 봉인",
+				Title = "흔들풍손 봉인",
 				X = 150,
-				Y = 100,
+				Y = 600,
 			};
 		allNodes.Add(decision2_1_yes1);
 		var decision2_1_yes2 = new FlowNode
 			{
 				Type = NodeType.Action,
-				Content = "드레디어 앙코르 동료만들기",
+				Title = "드레디어 앙코르 동료만들기",
 				X = 0,
-				Y = 1100,
+				Y = 600,
 			};
 		allNodes.Add(decision2_1_yes2);
 		var decision2_1_no1 = new FlowNode
 			{
 				Type = NodeType.Action,
-				Content = "골덕 선두",
+				Title = "골덕 선두",
 				X = -150,
 				Y = 200,
 			};
@@ -539,7 +584,7 @@
 		var decision3 = new FlowNode
 			{
 				Type = NodeType.Decision,
-				Content = "멸망의노래 or 추억의선물?",
+				Title = "멸망의노래 or 추억의선물?",
 				X = 0,
 				Y = 400,
 			};
@@ -548,7 +593,7 @@
 		var decision3_1 = new FlowNode
 			{
 				Type = NodeType.Decision,
-				Content = "4 변화기 포켓몬?",
+				Title = "4 변화기 포켓몬?",
 				X = 450,
 				Y = 100,
 			};
@@ -557,16 +602,25 @@
 		var decision3_1_yes1 = new FlowNode
 			{
 				Type = NodeType.Action,
-				Content = "봉인 교체 앙코르",
+				Title = "날개치는머리 봉인",
 				X = 150,
-				Y = 800,
+				Y = 200,
 			};
 		allNodes.Add(decision3_1_yes1);
+
+		var decision3_1_yes2 = new FlowNode
+			{
+				Type = NodeType.Action,
+				Title = "골덕 앙코르",
+				X = 0,
+				Y = 600,
+			};
+		allNodes.Add(decision3_1_yes2);
 
 		var decision3_2 = new FlowNode
 			{
 				Type = NodeType.Decision,
-				Content = "도발 무시 특성?",
+				Title = "도발 무시 특성?",
 				X = -150,
 				Y = 100,
 			};
@@ -575,7 +629,7 @@
 		var decision3_2_yes1 = new FlowNode
 			{
 				Type = NodeType.Action,
-				Content = "루차불 도발",
+				Title = "루차불 도발",
 				X = -150,
 				Y = 100,
 			};
@@ -584,7 +638,7 @@
 		var decision3_2_no1 = new FlowNode
 			{
 				Type = NodeType.Action,
-				Content = "도발",
+				Title = "도발",
 				X = 150,
 				Y = 100,
 			};
@@ -594,7 +648,7 @@
 		var decision4 = new FlowNode
 			{
 				Type = NodeType.Decision,
-				Content = "4 위험기술?",
+				Title = "전부 위험기술?",
 				X = 0,
 				Y = 400,
 			};
@@ -603,103 +657,173 @@
 		var decision4_no1 = new FlowNode
 			{
 				Type = NodeType.Action,
-				Content = "안전한 기술 앙코르",
+				Title = "안전한 기술 앙코르",
 				X = 0,
 				Y = 500,
 			};
 		allNodes.Add(decision4_no1);
 
-		var decision5 = new FlowNode
+		var decision_defense = new FlowNode
 			{
 				Type = NodeType.Decision,
-				Content = "방/특방 감소 기술 있음?",
+				Title = "방/특방 감소 기술 있음?",
 				X = -300,
 				Y = 100,
 			};
-		allNodes.Add(decision5);
+		allNodes.Add(decision_defense);
 
-		var decision5_yes1 = new FlowNode
+		var decision_defense_yes1 = new FlowNode
 			{
 				Type = NodeType.Decision,
-				Content = "스탯 6랭크 깎여도 버틸 수 있음?",
+				Title = "스탯 6랭크 깎여도 버틸 수 있음?",
 				X = 150,
 				Y = 100,
 			};
-		allNodes.Add(decision5_yes1);
+		allNodes.Add(decision_defense_yes1);
 
-		var decision5_yes2 = new FlowNode
+		var decision_defense_yes2 = new FlowNode
 			{
 				Type = NodeType.Action,
-				Content = "이 기술 앙코르로 고정",
+				Title = "이 기술 앙코르로 고정",
 				X = 0,
 				Y = 300,
 			};
-		allNodes.Add(decision5_yes2);
+		allNodes.Add(decision_defense_yes2);
 
-		var decision6 = new FlowNode
+		var decision_abilSwap = new FlowNode
 			{
 				Type = NodeType.Decision,
-				Content = "반동기 있음?",
-				X = -150,
+				Title = "특성 교체 가능?",
+				X = -300,
 				Y = 200,
 			};
-		allNodes.Add(decision6);
+		allNodes.Add(decision_abilSwap);
 
-		var decision6_yes1 = new FlowNode
-			{
-				Type = NodeType.Action,
-				Content = "픽시 매직가드 스킬스왑",
-				X = -150,
-				Y = 100,
-			};
-		allNodes.Add(decision6_yes1);
-
-		var decision7 = new FlowNode
+		var decision_recoil = new FlowNode
 			{
 				Type = NodeType.Decision,
-				Content = "난동기 있음?",
+				Title = "반동기 있음?",
+				X = 150,
+				Y = 200,
+			};
+		allNodes.Add(decision_recoil);
+
+		var decision_recoil_yes1 = new FlowNode
+			{
+				Type = NodeType.Action,
+				Title = "반동기 앙코르",
 				X = 150,
 				Y = 100,
 			};
-		allNodes.Add(decision7);
+		allNodes.Add(decision_recoil_yes1);
 
-		var decision7_yes1 = new FlowNode
+		var decision_recoil_yes2 = new FlowNode
 			{
 				Type = NodeType.Action,
-				Content = "픽시 매직가드 스킬스왑",
-				X = -150,
+				Title = "픽시 스킬스왑",
+				X = 0,
 				Y = 100,
 			};
-		allNodes.Add(decision7_yes1);
+		allNodes.Add(decision_recoil_yes2);
 
-		var decision8 = new FlowNode
+		var decision_thrash = new FlowNode
 			{
 				Type = NodeType.Decision,
-				Content = "우선도 높은 기술 있음?",
+				Title = "난동기 있음?",
 				X = -150,
 				Y = 100,
 			};
-		allNodes.Add(decision8);
+		allNodes.Add(decision_thrash);
 
+		var decision_thrash_yes1 = new FlowNode
+			{
+				Type = NodeType.Action,
+				Title = "난동기 앙코르",
+				X = 150,
+				Y = 100,
+			};
+		allNodes.Add(decision_thrash_yes1);
 
+		var decision_thrash_yes2 = new FlowNode
+			{
+				Type = NodeType.Action,
+				Title = "드레디어 동료만들기",
+				X = 0,
+				Y = 100,
+			};
+		allNodes.Add(decision_thrash_yes2);
 
-		var decision9 = new FlowNode
+		var decision_priority = new FlowNode
 			{
 				Type = NodeType.Decision,
-				Content = "상태이상 기술 있음?",
-				X = -150,
-				Y = 100,
+				Title = "우선도 높은 기술 있음?",
+				X = -300,
+				Y = 200,
 			};
-		allNodes.Add(decision9);
+		allNodes.Add(decision_priority);
 
-		var decision10 = new FlowNode
+		var decision_priority_yes1 = new FlowNode
+			{
+				Type = NodeType.Action,
+				Title = "선공기 쓴 턴에 앙코르",
+				X = 150,
+				Y = 300,
+			};
+		allNodes.Add(decision_priority_yes1);
+
+		var decision_burn = new FlowNode
 			{
 				Type = NodeType.Decision,
-				Content = "스피드 변화 기술 있음?",
+				Title = "상태이상 기술 있음?",
+				X = -300,
+				Y = 400,
+			};
+		allNodes.Add(decision_burn);
+
+		var decision_burn_yes1 = new FlowNode
+			{
+				Type = NodeType.Action,
+				Title = "올리르바 화상 걸어두기",
+				X = 150,
+				Y = 100,
+			};
+		allNodes.Add(decision_burn_yes1);
+
+		var decision_burn_yes2 = new FlowNode
+			{
+				Type = NodeType.Action,
+				Title = "상태이상 기술 앙코르",
+				X = 0,
+				Y = 100,
+			};
+		allNodes.Add(decision_burn_yes2);
+
+		var decision_speed = new FlowNode
+			{
+				Type = NodeType.Decision,
+				Title = "스피드 변화 기술 있음?",
 				X = -150,
 				Y = 100,
 			};
-		allNodes.Add(decision10);
+		allNodes.Add(decision_speed);
+
+		var decision_speed_yes1 = new FlowNode
+			{
+				Type = NodeType.Action,
+				Title = "앙코르(플랜B고정)",
+				X = 150,
+				Y = 100,
+			};
+		allNodes.Add(decision_speed_yes1);
+
+		var action_unplayable = new FlowNode
+			{
+				Type = NodeType.Action,
+				Title = "모든 기술이 위험함",
+				X = -150,
+				Y = 100,
+			};
+		allNodes.Add(action_unplayable);
 
 		// 시작
 		startNode.Children.Add(new Child(decision1, null, null));
@@ -715,7 +839,7 @@
 
 		decision2_1.Children.Add(new Child(decision2_1_yes1, (pokemon) => CheckAbilities(pokemon, gasIds), "Yes"));
 		decision2_1.Children.Add(new Child(decision2_1_no1, (pokemon) => !CheckAbilities(pokemon, gasIds), "No"));
-		decision2_1_yes1.Children.Add(new Child(decision2_1_yes2, null, null));
+		decision2_1_yes1.Children.Add(new Child(decision2_1_yes2, null, "드레디어 교체"));
 		//decision2_1_yes2.Children.Add(new Child(decision3, null, null));
 		decision2_1_no1.Children.Add(new Child(decision3, null, null));
 
@@ -726,18 +850,46 @@
 
 		decision3_1.Children.Add(new Child(decision3_1_yes1, (pokemon) => Check4StatusMoves(pokemon), "Yes"));
 		decision3_1.Children.Add(new Child(decision3_2, (pokemon) => !Check4StatusMoves(pokemon), "No"));
+		decision3_1_yes1.Children.Add(new Child(decision3_1_yes2, null, "골덕 교체"));
 
 
 		decision3_2.Children.Add(new Child(decision3_2_yes1, (pokemon) => CheckAbilities(pokemon, tauntImmuneIds), "Yes"));
 		decision3_2.Children.Add(new Child(decision3_2_no1, (pokemon) => !CheckAbilities(pokemon, tauntImmuneIds), "No"));
+		decision3_2_yes1.Children.Add(new Child(decision4, null, null));
+		decision3_2_no1.Children.Add(new Child(decision4, null, null));
 
-		decision4.Children.Add(new Child(decision5, (pokemon) => CheckAllMoves(pokemon, allMoveIds), "Yes"));
+		decision4.Children.Add(new Child(decision_priority, (pokemon) => CheckAllMoves(pokemon, allMoveIds), "Yes"));
 		decision4.Children.Add(new Child(decision4_no1, (pokemon) => !CheckAllMoves(pokemon, allMoveIds), "No"));
 
-		decision5.Children.Add(new Child(decision5_yes1, null, "Yes"));
-		decision5.Children.Add(new Child(decision6, null, "No"));
-		decision5_yes1.Children.Add(new Child(decision5_yes2, null, "Yes"));
-		decision5_yes1.Children.Add(new Child(decision6, null, "No"));
+		decision_priority.Children.Add(new Child(decision_defense, (pokemon) => !CheckMoves(pokemon, priorityIds), "No"));
+		decision_priority.Children.Add(new Child(decision_priority_yes1, (pokemon) => CheckMoves(pokemon, priorityIds), "Yes"));
+
+
+		decision_defense.Children.Add(new Child(decision_defense_yes1, (pokemon) => CheckMoves(pokemon, defenseIds), "Yes"));
+		decision_defense.Children.Add(new Child(decision_abilSwap, (pokemon) => !CheckMoves(pokemon, defenseIds), "No"));
+		decision_defense_yes1.Children.Add(new Child(decision_defense_yes2, null, "Yes"));
+		decision_defense_yes1.Children.Add(new Child(decision_abilSwap, null, "No"));
+
+		decision_abilSwap.Children.Add(new Child(decision_recoil, (pokemon) => !CheckAbilities(pokemon, unswapIds), "Yes"));
+		decision_abilSwap.Children.Add(new Child(decision_burn, (pokemon) => CheckAbilities(pokemon, unswapIds), "No"));
+
+
+		decision_recoil.Children.Add(new Child(decision_thrash, (pokemon) => !CheckMoves(pokemon, recoilIds), "No"));
+		decision_recoil.Children.Add(new Child(decision_recoil_yes1, (pokemon) => CheckMoves(pokemon, recoilIds), "Yes"));
+		decision_recoil_yes1.Children.Add(new Child(decision_recoil_yes2, null, "픽시 교체"));
+
+		decision_thrash.Children.Add(new Child(decision_burn, (pokemon) => !CheckMoves(pokemon, thrashIds), "No"));
+		decision_thrash.Children.Add(new Child(decision_thrash_yes1, (pokemon) => CheckMoves(pokemon, thrashIds), "Yes"));
+		decision_thrash_yes1.Children.Add(new Child(decision_thrash_yes2, null, "드레디어 교체"));
+
+
+		decision_burn.Children.Add(new Child(decision_burn_yes1, (pokemon) => CheckMoves(pokemon, burnIds), "Yes"));
+		decision_burn.Children.Add(new Child(decision_speed, (pokemon) => !CheckMoves(pokemon, burnIds), "No"));
+		decision_burn_yes1.Children.Add(new Child(decision_burn_yes2, null, null));
+
+		decision_speed.Children.Add(new Child(decision_speed_yes1, (pokemon) => CheckMoves(pokemon, speedIds), "Yes"));
+		decision_speed.Children.Add(new Child(action_unplayable, (pokemon) => !CheckMoves(pokemon, speedIds), "No"));
+
 
 	}
 	public static bool CheckMoves(WildPokemon pokemon, List<int> ids)
@@ -749,8 +901,17 @@
 	public static bool CheckAllMoves(WildPokemon pokemon, List<int> ids)
 	{
 		if (ids == null || ids.Count == 0) return false;
-		return ids.Contains(pokemon.Move1) || ids.Contains(pokemon.Move2) || ids.Contains(pokemon.Move3) || ids.Contains(pokemon.Move4);
+
+		// 각 Move가 -1이 아닐 경우에만 체크
+		bool checkMove1 = pokemon.Move1 == -1 || ids.Contains(pokemon.Move1);
+		bool checkMove2 = pokemon.Move2 == -1 || ids.Contains(pokemon.Move2);
+		bool checkMove3 = pokemon.Move3 == -1 || ids.Contains(pokemon.Move3);
+		bool checkMove4 = pokemon.Move4 == -1 || ids.Contains(pokemon.Move4);
+
+		// 모든 Move가 조건을 만족해야 true 반환
+		return checkMove1 && checkMove2 && checkMove3 && checkMove4;
 	}
+
 
 	public static bool CheckAbilities(WildPokemon pokemon, List<int> ids)
 	{
@@ -787,11 +948,13 @@
 
 		pokemon.DangerMoveCount = $"{dangerousMoveCount} 개";
 	}
-	private void UpdateDangerMoveCounts()
+	private void SimulationAll()
 	{
 		foreach (var pokemon in wildPokemons)
 		{
 			CalculateDangerMoveCount(pokemon);
+			pokemon.FlingSurvivalOutcome = IsSurviveFling(pokemon);
+
 		}
 		StateHasChanged(); // UI 갱신을 트리거합니다.
 	}
@@ -801,6 +964,9 @@
 
 	public void RunSimulation(WildPokemon pokemon)
 	{
+		pokemon.NodeList = new List<FlowNode>();
+		IsSurviveFling(pokemon);
+
 		// 하이라이트 초기화
 		foreach (FlowNode node in allNodes)
 		{
@@ -826,9 +992,8 @@
 	{
 		// 현재 노드를 하이라이트
 		currentNode.IsHighlighted = true;
-
+		pokemon.NodeList.Add(currentNode);
 		int nextNode = 0;
-
 		// 현재 노드가 결정 노드인 경우
 		if (currentNode.Type == NodeType.Decision)
 		{
@@ -856,6 +1021,67 @@
 	}
 
 
+	public enum SurvivalOutcome
+	{
+		NotCalculated,
+		CanSurvive,
+		CanSurviveIfBurned,
+		CannotSurvive
+	}
 
+	public SurvivalOutcome IsSurviveFling(WildPokemon pokemon)
+	{
+		// 종족값 계산
+		int hpStat = dataService.PokemonStats.FirstOrDefault(stat => stat.PokemonId == pokemon.Id && stat.StatId == 1)?.BaseStat ?? 0;
+		int defenseStat = dataService.PokemonStats.FirstOrDefault(stat => stat.PokemonId == pokemon.Id && stat.StatId == 3)?.BaseStat ?? 0;
+
+		// 실제 HP 및 방어 수치 계산
+		int actualHP = (int)Math.Floor(((hpStat * 2 + 100) * pokemon.Level / 100.0) + 10);
+		int actualDefense = (int)Math.Floor(((defenseStat * 2 * pokemon.Level / 100.0) + 5) * 0.9);
+
+		// 내던지기 피해량 계산
+		double flingDamageCalc = Math.Floor((((2 * 79 / 5) + 2) * 10 * 103 / (double)actualDefense / 50) + 2) * 1.5;
+		int flingDamage = (int)Math.Floor(flingDamageCalc);
+		int burnedFlingDamage = (int)Math.Floor(flingDamageCalc / 2);
+		int grassyTerrainRecovery = (int)Math.Floor(actualHP / 16.0) * 9;
+
+		// 생존 여부 결정
+		if (flingDamage <= grassyTerrainRecovery)
+		{
+			return SurvivalOutcome.CanSurvive;
+		}
+		else if (burnedFlingDamage <= grassyTerrainRecovery)
+		{
+			return SurvivalOutcome.CanSurviveIfBurned;
+		}
+		else
+		{
+			return SurvivalOutcome.CannotSurvive;
+		}
+		
+	}
+
+
+
+	public string GetMoveNameById(int moveId)
+	{
+		var matchingMoveName = MoveNames.FirstOrDefault(mn => mn.MoveId == moveId && mn.LocalLanguageId == CurrentLanguageId);
+		return matchingMoveName?.Name ?? $"Move {moveId}";
+	}
+
+	public string GetAbilityNameById(int abilityId)
+	{
+		if (abilityId != -1)
+		{
+			var matchingAbilityName = AbilityNames.FirstOrDefault(mn => mn.AbilityId == abilityId && mn.LocalLanguageId == CurrentLanguageId);
+			return matchingAbilityName?.Name ?? $"Ability {abilityId}";
+
+		}
+		else
+		{
+			return "";
+		}
+
+	}
 }
 
