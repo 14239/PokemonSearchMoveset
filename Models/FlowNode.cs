@@ -9,6 +9,19 @@ public enum NodeType
     Action,// 결과 혹은 그냥 직렬로 이어지는 노드
 }
 
+public class NodePokemon
+{
+	public string Name { get; set; }
+	public string Color { get; set; }
+
+	public NodePokemon(string name, string color)
+	{
+		Name = name;
+		Color = color;
+	}
+}
+
+
 public class Child
 {
 	public FlowNode Node { get; set; }
@@ -33,7 +46,7 @@ public class FlowNode
 	public string? Title { get; set; }    // 노드 타이틀
 	public string? Content { get; set; }    // 노드 사용 시 로그
 
-	public string? UsedPokemon { get; set; }		// 노드를 실행하는데 사용되는 포켓몬
+	public NodePokemon UsedPokemon { get; set; }		// 노드를 실행하는데 사용되는 포켓몬
 
 
 
@@ -53,6 +66,7 @@ public class FlowNode
 	}
 
 	public bool IsHighlighted { get; set; }
+	public bool IsLong { get; set; }		// 긴 노드일때 대비
 
 }
 

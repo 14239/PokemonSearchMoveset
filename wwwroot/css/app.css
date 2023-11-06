@@ -261,7 +261,6 @@ a, .btn-link {
 }
 
 .node {
-	fill: lightgray;
 	stroke: black;
 	stroke-width:3px;
 }
@@ -304,7 +303,6 @@ a, .btn-link {
 
 
 	.node.highlighted {
-		fill:lightpink;
 		stroke-width: 4;
 		stroke: red;
 	}

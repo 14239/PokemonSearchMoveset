@@ -87,12 +87,6 @@
 		</PagerContent>
 	</MudTable>
 
-	<div class="d-flex flex-wrap mt-4">
-		<MudSwitch @bind-Checked="@hover" Color="Color.Primary">Hover</MudSwitch>
-		<MudSwitch @bind-Checked="@dense" Color="Color.Secondary">Dense</MudSwitch>
-		<MudSwitch @bind-Checked="@striped" Color="Color.Tertiary">Striped</MudSwitch>
-		<MudSwitch @bind-Checked="@bordered" Color="Color.Warning">Bordered</MudSwitch>
-	</div>
 }
 
 @if (selectedPokemonForLog != null)
@@ -210,6 +204,7 @@
 		public int Move4 { get; set; }
 
 		public List<FlowNode> NodeList { get; set; } = new List<FlowNode>();
+		public List<NodePokemon> UsedPokemons { get; set; } = new List<NodePokemon>();
 		public PokemonLog Log { get; set; } = new PokemonLog(); // 로그 객체 포함
 
 		public string DangerMoveCount { get; set; }
@@ -278,7 +273,7 @@
 
 		return result;
 	}
-	private bool dense = false;
+	private bool dense = true;
 	private bool hover = true;
 	private bool striped = false;
 	private bool bordered = true;
@@ -325,15 +320,18 @@
 
 		StringBuilder contentBuilder = new StringBuilder();
 		string highlightedClass = node.IsHighlighted ? "highlighted" : "";
+		string pokemonColor = node.UsedPokemon?.Color ?? "#EEEEEE"; // 기본 색상을 흰색으로 설정
+		string textColor = IsDarkColor(pokemonColor) ? "#FFFFFF" : "#000000"; // 배경색이 어두우면 흰색, 그렇지 않으면 검은색
+
 
 		int x = node.GetAbsoluteX(allNodes);
 		int y = node.GetAbsoluteY(allNodes);
 
 		string nodeContent = node.Type switch
 		{
-			NodeType.Start => $"<rect x='{x - 50}' y='{y - 20}' width='100' height='40' class='node start {highlightedClass}' ></rect><text x='{x}' y='{y}' class='node-text' text-anchor='middle' dominant-baseline='middle'>{node.Title}</text>",
-			NodeType.Decision => $"<polygon points='{x - 0},{y - 30} {x + 100},{y + 0} {x - 0},{y + 30} {x - 100},{y + 0}' class='node decision {highlightedClass}'></polygon><text x='{x}' y='{y + 0}' class='node-text' text-anchor='middle' dominant-baseline='middle'>{node.Title}</text>",
-			NodeType.Action => $"<rect x='{x - 60}' y='{y - 30}' width='120' height='60' class='node action {highlightedClass}'></rect><text x='{x}' y='{y}' class='node-text' text-anchor='middle' dominant-baseline='middle'>{node.Title}</text>",
+			NodeType.Start => $"<rect x='{x - 50}' y='{y - 20}' width='100' height='40' class='node start {highlightedClass}' fill='{pokemonColor}'></rect><text x='{x}' y='{y}' fill='{textColor}' class='node-text' text-anchor='middle' dominant-baseline='middle'>{node.Title}</text>",
+			NodeType.Decision => $"<polygon points='{x - 0},{y - 30} {x + 100},{y + 0} {x - 0},{y + 30} {x - 100},{y + 0}' class='node decision {highlightedClass}' fill='{pokemonColor}'></polygon><text x='{x}' y='{y + 0}' fill='{textColor}' class='node-text' text-anchor='middle' dominant-baseline='middle'>{node.Title}</text>",
+			NodeType.Action => $"<rect x='{x - 60}' y='{y - 30}' width='120' height='60' class='node action {highlightedClass}' fill='{pokemonColor}'></rect><text x='{x}' y='{y}' fill='{textColor}' class='node-text' text-anchor='middle' dominant-baseline='middle'>{node.Title}</text>",
 			_ => ""
 		};
 
@@ -361,17 +359,35 @@
 				int verticalLength = endY - startY;
 				int halfVertical = verticalLength / 2;
 
+
+				int v1 = 0;
+				int v2 = 0;
+				int textY = 0;
+				if (!childNode.Node.IsLong)
+				{
+					v1 = 50;
+					v2 = verticalLength - 50;
+					textY = startY + 50;
+				}
+				else
+				{
+					v2 = 50;
+					v1 = verticalLength - 50;
+					textY = endY - 50;
+
+				}
+
 				string highlightedClass = childNode.IsHighlightedLine ? "highlighted" : "";
 
 				string pathData = $"M {startX} {startY} ";
-				pathData += $"v {50} ";
+				pathData += $"v {v1} ";
 
 				if (horizontalLength != 0)
 				{
 					pathData += $"h {horizontalLength} ";
 				}
 
-				pathData += $"v {verticalLength-50}";
+				pathData += $"v {v2}";
 
 				arrowBuilder.Append($"<path d='{pathData}' class='path {highlightedClass}'  />");
 
@@ -385,7 +401,7 @@
 					}
 					else
 					{
-						arrowBuilder.Append($"<text x='{midX}' y='{startY+50}' class='arrow-label'>{childNode.ArrowLabel}</text>");
+						arrowBuilder.Append($"<text x='{midX}' y='{textY}' class='arrow-label'>{childNode.ArrowLabel}</text>");
 
 					}	
 				}
@@ -430,7 +446,17 @@
 		};
 
 
+	// Node 포켓몬 목록
 
+	NodePokemon Pokemon1 = new NodePokemon("올리르바", "#91B763");
+	NodePokemon Pokemon2 = new NodePokemon("대로트", "#778F72");
+	NodePokemon Pokemon3 = new NodePokemon("골덕", "#6390F0");
+	NodePokemon Pokemon4 = new NodePokemon("픽시", "#D685AD");
+	NodePokemon Pokemon5 = new NodePokemon("드레디어", "#7AC74C");
+	NodePokemon Pokemon6 = new NodePokemon("둥실라이드", "#8E73C5");
+	NodePokemon Pokemon7 = new NodePokemon("깜까미", "#72576F");
+	NodePokemon Pokemon8 = new NodePokemon("루차불", "#C22E28");
+	NodePokemon Pokemon9 = new NodePokemon("날개치는머리", "#A56EA2");
 
 
 	// 멤버 변수 선언
@@ -551,15 +577,16 @@
 			{
 				Type = NodeType.Decision,
 				Title = "화학변화가스?",
-				X = 600,
+				X = -600,
 				Y = 100,
 			};
 		allNodes.Add(decision2_1);
 		var decision2_1_yes1 = new FlowNode
 			{
 				Type = NodeType.Action,
-				Title = "흔들풍손 봉인",
-				X = 150,
+				Title = "둥실라이드 봉인",
+				UsedPokemon = Pokemon6,
+				X = -800,
 				Y = 600,
 			};
 		allNodes.Add(decision2_1_yes1);
@@ -567,6 +594,7 @@
 			{
 				Type = NodeType.Action,
 				Title = "드레디어 앙코르 동료만들기",
+				UsedPokemon = Pokemon5,
 				X = 0,
 				Y = 600,
 			};
@@ -575,8 +603,9 @@
 			{
 				Type = NodeType.Action,
 				Title = "골덕 선두",
-				X = -150,
-				Y = 200,
+				UsedPokemon = Pokemon3,
+				X = 150,
+				Y = 100,
 			};
 		allNodes.Add(decision2_1_no1);
 
@@ -586,7 +615,7 @@
 				Type = NodeType.Decision,
 				Title = "멸망의노래 or 추억의선물?",
 				X = 0,
-				Y = 400,
+				Y = 300,
 			};
 		allNodes.Add(decision3);
 
@@ -603,6 +632,7 @@
 			{
 				Type = NodeType.Action,
 				Title = "날개치는머리 봉인",
+				UsedPokemon = Pokemon9,
 				X = 150,
 				Y = 200,
 			};
@@ -612,6 +642,7 @@
 			{
 				Type = NodeType.Action,
 				Title = "골덕 앙코르",
+				UsedPokemon = Pokemon3,
 				X = 0,
 				Y = 600,
 			};
@@ -630,6 +661,7 @@
 			{
 				Type = NodeType.Action,
 				Title = "루차불 도발",
+				UsedPokemon = Pokemon8,
 				X = -150,
 				Y = 100,
 			};
@@ -690,21 +722,21 @@
 			};
 		allNodes.Add(decision_defense_yes2);
 
-		var decision_abilSwap = new FlowNode
+		var decision_abilSwapEarly = new FlowNode
 			{
 				Type = NodeType.Decision,
 				Title = "특성 교체 가능?",
-				X = -300,
+				X = -150,
 				Y = 200,
 			};
-		allNodes.Add(decision_abilSwap);
+		allNodes.Add(decision_abilSwapEarly);
 
 		var decision_recoil = new FlowNode
 			{
 				Type = NodeType.Decision,
 				Title = "반동기 있음?",
-				X = 150,
-				Y = 200,
+				X = -300,
+				Y = 100,
 			};
 		allNodes.Add(decision_recoil);
 
@@ -712,7 +744,7 @@
 			{
 				Type = NodeType.Action,
 				Title = "반동기 앙코르",
-				X = 150,
+				X = -150,
 				Y = 100,
 			};
 		allNodes.Add(decision_recoil_yes1);
@@ -721,6 +753,7 @@
 			{
 				Type = NodeType.Action,
 				Title = "픽시 스킬스왑",
+				UsedPokemon = Pokemon4,
 				X = 0,
 				Y = 100,
 			};
@@ -730,7 +763,7 @@
 			{
 				Type = NodeType.Decision,
 				Title = "난동기 있음?",
-				X = -150,
+				X = 150,
 				Y = 100,
 			};
 		allNodes.Add(decision_thrash);
@@ -739,7 +772,7 @@
 			{
 				Type = NodeType.Action,
 				Title = "난동기 앙코르",
-				X = 150,
+				X = -150,
 				Y = 100,
 			};
 		allNodes.Add(decision_thrash_yes1);
@@ -748,6 +781,7 @@
 			{
 				Type = NodeType.Action,
 				Title = "드레디어 동료만들기",
+				UsedPokemon = Pokemon5,
 				X = 0,
 				Y = 100,
 			};
@@ -758,7 +792,7 @@
 				Type = NodeType.Decision,
 				Title = "우선도 높은 기술 있음?",
 				X = -300,
-				Y = 200,
+				Y = 100,
 			};
 		allNodes.Add(decision_priority);
 
@@ -775,7 +809,7 @@
 			{
 				Type = NodeType.Decision,
 				Title = "상태이상 기술 있음?",
-				X = -300,
+				X = 150,
 				Y = 400,
 			};
 		allNodes.Add(decision_burn);
@@ -784,6 +818,7 @@
 			{
 				Type = NodeType.Action,
 				Title = "올리르바 화상 걸어두기",
+				UsedPokemon = Pokemon1,
 				X = 150,
 				Y = 100,
 			};
@@ -803,7 +838,7 @@
 				Type = NodeType.Decision,
 				Title = "스피드 변화 기술 있음?",
 				X = -150,
-				Y = 100,
+				Y = 200,
 			};
 		allNodes.Add(decision_speed);
 
@@ -824,6 +859,35 @@
 				Y = 100,
 			};
 		allNodes.Add(action_unplayable);
+
+		var decision_abilSwap = new FlowNode
+			{
+				Type = NodeType.Decision,
+				Title = "특성 교체 가능?",
+				X = -300,
+				Y = 800,
+			};
+		allNodes.Add(decision_abilSwap);
+
+		var decision_flingSurvive = new FlowNode
+			{
+				Type = NodeType.Decision,
+				Title = "올리르바 내던지기 버팀?",
+				X = -0,
+				Y = 900,
+				IsLong = true,
+			};
+		allNodes.Add(decision_flingSurvive);
+
+		var decision_soak = new FlowNode
+			{
+				Type = NodeType.Decision,
+				Title = "비행 타입 보유?",
+				X = -0,
+				Y = 900,
+				IsLong = true,
+			};
+		allNodes.Add(decision_soak);
 
 		// 시작
 		startNode.Children.Add(new Child(decision1, null, null));
@@ -866,12 +930,12 @@
 
 
 		decision_defense.Children.Add(new Child(decision_defense_yes1, (pokemon) => CheckMoves(pokemon, defenseIds), "Yes"));
-		decision_defense.Children.Add(new Child(decision_abilSwap, (pokemon) => !CheckMoves(pokemon, defenseIds), "No"));
+		decision_defense.Children.Add(new Child(decision_abilSwapEarly, (pokemon) => !CheckMoves(pokemon, defenseIds), "No"));
 		decision_defense_yes1.Children.Add(new Child(decision_defense_yes2, null, "Yes"));
-		decision_defense_yes1.Children.Add(new Child(decision_abilSwap, null, "No"));
+		decision_defense_yes1.Children.Add(new Child(decision_abilSwapEarly, null, "No"));
 
-		decision_abilSwap.Children.Add(new Child(decision_recoil, (pokemon) => !CheckAbilities(pokemon, unswapIds), "Yes"));
-		decision_abilSwap.Children.Add(new Child(decision_burn, (pokemon) => CheckAbilities(pokemon, unswapIds), "No"));
+		decision_abilSwapEarly.Children.Add(new Child(decision_recoil, (pokemon) => !CheckAbilities(pokemon, unswapIds), "Yes"));
+		decision_abilSwapEarly.Children.Add(new Child(decision_burn, (pokemon) => CheckAbilities(pokemon, unswapIds), "No"));
 
 
 		decision_recoil.Children.Add(new Child(decision_thrash, (pokemon) => !CheckMoves(pokemon, recoilIds), "No"));
@@ -890,7 +954,20 @@
 		decision_speed.Children.Add(new Child(decision_speed_yes1, (pokemon) => CheckMoves(pokemon, speedIds), "Yes"));
 		decision_speed.Children.Add(new Child(action_unplayable, (pokemon) => !CheckMoves(pokemon, speedIds), "No"));
 
+		//특성 바꿀 수 있는지로 다 모으기
+		decision4_no1.Children.Add(new Child(decision_abilSwap, null, null));
+		decision3_1_yes2.Children.Add(new Child(decision_abilSwap, null, null));
+		decision_defense_yes2.Children.Add(new Child(decision_abilSwap, null, null));
+		decision_burn_yes2.Children.Add(new Child(decision_abilSwap, null, null));
 
+		// 내던지기 버티나?
+		decision_abilSwap.Children.Add(new Child(decision_flingSurvive, null, "No"));
+		decision_speed_yes1.Children.Add(new Child(decision_flingSurvive, null, null));
+		decision_thrash_yes2.Children.Add(new Child(decision_flingSurvive, null, null));
+		decision_recoil_yes2.Children.Add(new Child(decision_flingSurvive, null, null));
+		decision2_1_yes2.Children.Add(new Child(decision_flingSurvive, null, null));
+		
+		
 	}
 	public static bool CheckMoves(WildPokemon pokemon, List<int> ids)
 	{
@@ -965,7 +1042,7 @@
 	public void RunSimulation(WildPokemon pokemon)
 	{
 		pokemon.NodeList = new List<FlowNode>();
-		IsSurviveFling(pokemon);
+		pokemon.FlingSurvivalOutcome = IsSurviveFling(pokemon);
 
 		// 하이라이트 초기화
 		foreach (FlowNode node in allNodes)
@@ -984,6 +1061,8 @@
 		{
 			GenerateSimulation(startNode, pokemon);
 		}
+		StateHasChanged(); // UI 갱신을 트리거합니다.
+
 	}
 
 
@@ -1083,5 +1162,19 @@
 		}
 
 	}
+
+	private bool IsDarkColor(string color)
+	{
+		// HEX 색상을 RGB로 변환
+		int r = Convert.ToInt32(color.Substring(1, 2), 16);
+		int g = Convert.ToInt32(color.Substring(3, 2), 16);
+		int b = Convert.ToInt32(color.Substring(5, 2), 16);
+
+		// 밝기 계산 (단순화된 방법)
+		double luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+		return luminance < 0.5;
+	}
+
+
 }
 
