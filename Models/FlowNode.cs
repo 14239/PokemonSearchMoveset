@@ -1,6 +1,6 @@
 ﻿using PokemonSearchMoveset.Pages;
 using System.Xml.Linq;
-using static PokemonSearchMoveset.Pages.Wild_Table;
+using static PokemonSearchMoveset.Pages.Wild_Simulation;
 
 public enum NodeType
 {
@@ -41,13 +41,24 @@ public class Child
 
 public class FlowNode
 {
-	public NodeType Type { get; set; }		// 사각형인지 마름모인지
+	public NodeType Type { get; set; }      // 사각형인지 마름모인지
+
 	public List<Child> Children { get; set; } = new(); // 이어지는 자식 노드
 	public string? Title { get; set; }    // 노드 타이틀
 	public string? Content { get; set; }    // 노드 사용 시 로그
 
-	public NodePokemon UsedPokemon { get; set; }		// 노드를 실행하는데 사용되는 포켓몬
+	public NodePokemon UsedPokemon { get; set; }        // 노드를 실행하는데 사용되는 포켓몬
+	
+	// 기술 선택
+	public Func<WildPokemon, int> SelectMoveLogic { get; set; }
 
+	public void ExecuteSelectMoveLogic(WildPokemon pokemon)
+	{
+		if (SelectMoveLogic != null && pokemon.SelectedMove == -1)
+		{
+			pokemon.SelectedMove = SelectMoveLogic(pokemon);
+		}
+	}
 
 
 	public int X { get; set; }

@@ -139,7 +139,7 @@
         }
     }
 
-    private List<WildPokemon> wildPokemons { get; set; } = new List<WildPokemon>();
+    private List<PokemonData> wildPokemons { get; set; } = new List<PokemonData>();
     private List<OutputRow> OutputTable { get; set; }
 
 
@@ -166,7 +166,7 @@
     }
 
 
-    public class WildPokemon
+    public class PokemonData
     {
         public string Location { get; set; }
         public string SubLocation { get; set; }
@@ -194,10 +194,10 @@
 
 
 
-    private List<WildPokemon> ParseInputData(string csvData)
+    private List<PokemonData> ParseInputData(string csvData)
     {
         var lines = csvData.Split('\n').Skip(1); // 첫 번째 행은 헤더이므로 생략
-        var result = new List<WildPokemon>();
+        var result = new List<PokemonData>();
 
         string previousLine = null;
 
@@ -213,7 +213,7 @@
             var tokens = currentLine.Split(',');
             if (tokens.Length >= 7) // 최소한의 필요한 열이 있는지 확인
             {
-                result.Add(new WildPokemon
+                result.Add(new PokemonData
                     {
                         Location = tokens[0].Replace("\"", "").Trim(),
                         SubLocation = tokens[1].Trim(),
@@ -286,7 +286,7 @@
     private bool DisplayAsInt { get; set; }
 
 
-    private void AddOutputRow(PokemonCSV matchedPokemon, WildPokemon wildPokemon)
+    private void AddOutputRow(PokemonCSV matchedPokemon, PokemonData wildPokemon)
     {
         var levels = GetLevelsFromRange(wildPokemon.LevelRange);
 
