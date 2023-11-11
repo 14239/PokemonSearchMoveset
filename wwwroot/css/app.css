@@ -304,9 +304,13 @@ a, .btn-link {
 
 
 	.node.highlighted {
-		stroke-width: 4;
+		stroke-width: 5;
 		stroke: red;
 	}
+.selected {
+	font-weight: bold;
+	stroke-width: 5px; /* 노드 테두리 굵기 */
+}
 
 .node-text {
 	text-anchor: middle;

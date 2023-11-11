@@ -16,33 +16,34 @@
 @using System.Collections.Generic
 @using BlazorPanzoom
 
- 
-<div class="flow-chart-wrapper">
+
+<div tabindex="0" class="flow-chart-wrapper">
+	<div class="pokemon-info">
+		@if (selectedPokemon != null)
+		{
+			<span> @selectedPokemon.Name - 레벨: @selectedPokemon.Level</span>
+		}
+		else
+		{
+			<span> 선택한 포켓몬이 없습니다.</span>
+		}
+
+	</div>
+
 	<Panzoom @ref="panZoomComponent" WheelMode="WheelMode.ZoomWithWheel" PanzoomOptions="options">
 		<div @ref="@context.ElementReference" class="flow-chart">
 			@RenderAllElements()
 		</div>
 	</Panzoom>
 </div>
-
-<div class="pokemon-info">
-	@if (selectedPokemon != null)
-	{
-		<span>@selectedPokemon.Name - 레벨: @selectedPokemon.Level</span>
-	}
-	else
-	{
-		<span>선택한 포켓몬이 없습니다.</span>
-	}
-
-</div>
+<br />
 
 <InputFile OnChange="LoadCsvData" />
-<b></b>
 <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@SimulationAll">시뮬레이션</MudButton>
 
 @if (wildPokemons != null && wildPokemons.Count > 0)
 {
+	@*
 	<MudTable Items="@wildPokemons" Filter="new Func<WildPokemon, bool>(FilterFunc)" Dense="@dense" Hover="@hover" Bordered="@bordered" Striped="@striped" RowsPerPage="10" Breakpoint="Breakpoint.Sm">
 		<ToolBarContent>
 			<MudText Typo="Typo.h6">Wild Pokemons</MudText>
@@ -63,6 +64,7 @@
 			<MudTh>Selected Move</MudTh>
 			<MudTh>DangerCount</MudTh>
 			<MudTh>내구력</MudTh>
+			<MudTh>올리르바 데미지</MudTh>
 
 		</HeaderContent>
 		<RowTemplate>
@@ -76,9 +78,10 @@
 			<MudTd DataLabel="Move2">@GetMoveNameById(context.Moves[1])</MudTd>
 			<MudTd DataLabel="Move3">@GetMoveNameById(context.Moves[2])</MudTd>
 			<MudTd DataLabel="Move4">@GetMoveNameById(context.Moves[3])</MudTd>
-			<MudTd DataLabel="Selected Move">@GetMoveNameById(context.SelectedMove)</MudTd>
+			<MudTd DataLabel="Selected Move">@GetMoveNameById(context.PossibleMoves[0])</MudTd>
 			<MudTd DataLabel="DangerCount">@context.DangerMoveCount</MudTd>
 			<MudTd DataLabel="내구력">@context.FlingSurvivalOutcome</MudTd>
+			<MudTd DataLabel="올리르바 데미지">@context.ArbolivaDamage +  / 286</MudTd>
 			<MudTd><MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small" @onclick="(() => ShowLog(context))">Show Log</MudButton></MudTd>
 			<MudTd>
 				<MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small" @onclick="(() => RunSimulation(context))">Run Simulation</MudButton>
@@ -90,6 +93,36 @@
 			<MudTablePager />
 		</PagerContent>
 	</MudTable>
+	*@
+	<MudDataGrid Items="@wildPokemons" Filterable="true" Striped="true" Bordered="true" Hover="true" RowsPerPage="10" HorizontalScrollbar="true" Style="width: 1920px;">
+		<Columns>
+			<PropertyColumn Property="x => x.Id" Title="User ID" />
+			<PropertyColumn Property="x => x.Name" Title="Name" />
+			<PropertyColumn Property="x => x.Level" Title="Level" />
+			<PropertyColumn Property="x => x.Type1" Title="Type1" />
+			<PropertyColumn Property="x => x.Type2" Title="Type2" />
+			<PropertyColumn Property="x => GetAbilityNameById(x.Ability)" Title="Ability" />
+			<PropertyColumn Property="x => GetMoveNameById(x.Moves[0])" Title="Move1" />
+			<PropertyColumn Property="x => GetMoveNameById(x.Moves[1])" Title="Move2" />
+			<PropertyColumn Property="x => GetMoveNameById(x.Moves[2])" Title="Move3" />
+			<PropertyColumn Property="x => GetMoveNameById(x.Moves[3])" Title="Move4" />
+			<PropertyColumn Property="x => GetMoveNameById(x.PossibleMoves.FirstOrDefault())" Title="Selected Move" />
+			<PropertyColumn Property="x => x.DangerMoveCount" Title="DangerCount" />
+			<PropertyColumn Property="x => x.FlingSurvivalOutcome" Title="내구력" />	
+			<PropertyColumn Property="x => x.ArbolivaDamage" Title="올리르바 데미지" />
+			<TemplateColumn Title="Actions">
+				<CellTemplate>
+					<MudStack Row>
+						<MudButton @onclick="() => ShowLog(context.Item)" Size="@Size.Small" Variant="@Variant.Filled" Color="@Color.Primary">Show Log</MudButton>
+						<MudButton @onclick="() => RunSimulation(context.Item)" Size="@Size.Small" Variant="@Variant.Filled" Color="@Color.Primary">Run Simulation</MudButton>
+					</MudStack>
+				</CellTemplate>
+			</TemplateColumn>
+		</Columns>
+		<PagerContent>
+			<MudDataGridPager />
+		</PagerContent>
+	</MudDataGrid>
 
 }
 
@@ -151,7 +184,7 @@
 	private List<PokemonTypeCSV> PokemonTypes = new List<PokemonTypeCSV>();
 	private List<TypeNameCSV> TypeNames = new List<TypeNameCSV>();
 	public List<MoveNameCSV> MoveNames { get; set; } = new List<MoveNameCSV>();
-	public static List<MoveCSV> Moves { get; set; } = new List<MoveCSV>();
+	public static List<MoveCSV> AllMoves { get; set; } = new List<MoveCSV>();
 
 	// 필터링된 데이터를 저장할 변수를 추가합니다.
 	private List<PokemonMoveCSV> FilteredPokemonMoves { get; set; } = new List<PokemonMoveCSV>();
@@ -166,7 +199,7 @@
 		PokemonTypes = dataService.PokemonTypes;
 		TypeNames = dataService.TypeNames;
 		MoveNames = dataService.MoveNames;
-		Moves = dataService.Moves;
+		AllMoves = dataService.Moves;
 		AbilityNames = dataService.AbilityNames;
 
 
@@ -230,7 +263,7 @@
 		public string Type2 { get; set; }
 		public int Ability { get; set; }
 
-		public int SelectedMove { get; set; } = -1;
+		public List<int> PossibleMoves { get; set; } = new List<int>();
 		public List<int> Moves { get; set; } = new List<int>();
 
 
@@ -240,7 +273,8 @@
 
 		public string DangerMoveCount { get; set; }
 		public SurvivalOutcome FlingSurvivalOutcome { get; set; }
-
+		public bool IsBurned { get; set; }	// 올리르바 화상 여부
+		public int ArbolivaDamage { get; set; }
 	}
 
 	private List<WildPokemon> wildPokemons { get; set; } = new List<WildPokemon>();
@@ -260,12 +294,20 @@
 	}
 	private List<WildPokemon> ParseInputData(string csvData)
 	{
-		var lines = csvData.Split('\n').Skip(1).Where(line => !string.IsNullOrWhiteSpace(line)); // 첫 번째 행은 헤더이므로 생략하고 빈 행은 필터링
+		var lines = csvData.Split('\n').Skip(1).Where(line => !string.IsNullOrWhiteSpace(line));
 		var result = new List<WildPokemon>();
 
 		foreach (var line in lines)
 		{
-			var values = line.Split(',').Select(val => val.Trim()).ToArray(); // 쉼표로 구분하고 공백 제거
+			var values = line.Split(',').Select(val => val.Trim()).ToArray();
+
+			var moves = new List<int>
+		{
+			int.TryParse(values[8], out var move1) ? move1 : -1,
+			int.TryParse(values[9], out var move2) ? move2 : -1,
+			int.TryParse(values[10], out var move3) ? move3 : -1,
+			int.TryParse(values[11], out var move4) ? move4 : -1
+		};
 
 			var wildPokemonForAbility1 = new WildPokemon
 				{
@@ -275,18 +317,12 @@
 					Type1 = values[3],
 					Type2 = values[4],
 					Ability = int.Parse(values[5]),
-					Moves = new List<int>
-				{
-					int.TryParse(values[8], out var move1) ? move1 : -1,
-					int.TryParse(values[9], out var move2) ? move2 : -1,
-					int.TryParse(values[10], out var move3) ? move3 : -1,
-					int.TryParse(values[11], out var move4) ? move4 : -1
-				}
+					Moves = new List<int>(moves),
+					PossibleMoves = new List<int>(moves)
 				};
 			result.Add(wildPokemonForAbility1);
 
-			// Ability2 값이 -1이 아닐 경우 별도의 포켓몬 객체로 추가
-			if (values[6] != "-1")
+			if (values.Length > 6 && values[6] != "-1")
 			{
 				var wildPokemonForAbility2 = new WildPokemon
 					{
@@ -296,7 +332,8 @@
 						Type1 = values[3],
 						Type2 = values[4],
 						Ability = int.Parse(values[6]),
-						Moves = new List<int>(wildPokemonForAbility1.Moves) // 기존 Moves 리스트를 복사합니다.
+						Moves = new List<int>(moves),
+						PossibleMoves = new List<int>(moves)
 					};
 				result.Add(wildPokemonForAbility2);
 			}
@@ -304,6 +341,7 @@
 
 		return result;
 	}
+
 
 	private bool dense = true;
 	private bool hover = true;
@@ -348,6 +386,28 @@
 		StateHasChanged(); // UI 갱신을 트리거합니다.
 	}
 
+	[JSInvokable]
+	public void OnNodeClick(string nodeId)
+	{
+		// 'nodeId'에서 숫자 부분만 추출합니다.
+		var idPart = nodeId.Split('_').LastOrDefault();
+
+		if (int.TryParse(idPart, out int actualNodeId))
+		{
+			var node = allNodes.FirstOrDefault(n => n.Id == actualNodeId);
+			if (node != null)
+			{
+				ToggleNodeSelection(node);
+			}
+		}
+		else
+		{
+			// 'idPart'가 유효한 숫자가 아닐 경우, 적절한 오류 처리를 합니다.
+			Console.WriteLine("Invalid node ID format.");
+		}
+	}
+
+
 
 	private void ToggleNodeSelection(FlowNode node)
 	{
@@ -363,6 +423,18 @@
 		StateHasChanged(); // UI 업데이트
 	}
 
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		// firstRender 체크를 제거하거나, 다른 조건을 추가하여 상태 변경시마다 실행되도록 합니다.
+		var dotNetReference = DotNetObjectReference.Create(this);
+		foreach (var node in allNodes)
+		{
+			string shapeId = $"node_{node.Id}";
+			string textId = $"text_{node.Id}";
+			await JSRuntime.InvokeVoidAsync("addClickEventToSvgElement", shapeId, dotNetReference, "OnNodeClick");
+			await JSRuntime.InvokeVoidAsync("addClickEventToSvgElement", textId, dotNetReference, "OnNodeClick");
+		}
+	}
 
 
 
@@ -374,20 +446,20 @@
 	{
 		if (node == null) return "";
 
-		StringBuilder contentBuilder = new StringBuilder();
 		string highlightedClass = node.IsHighlighted ? "highlighted" : "";
-		string pokemonColor = node.UsedPokemon?.Color ?? "#EEEEEE"; // 기본 색상을 흰색으로 설정
-		string textColor = IsDarkColor(pokemonColor) ? "#FFFFFF" : "#000000"; // 배경색이 어두우면 흰색, 그렇지 않으면 검은색
-
+		string selectedClass = selectedNodes.Contains(node) ? "selected" : ""; // 선택된 노드에 추가할 클래스
+		string pokemonColor = node.UsedPokemon?.Color ?? "#EEEEEE";
+		string textColor = IsDarkColor(pokemonColor) ? "#FFFFFF" : "#000000";
 
 		int x = node.GetAbsoluteX(allNodes);
 		int y = node.GetAbsoluteY(allNodes);
-
+		string shapeId = $"node_{node.Id}";
+		string textId = $"text_{node.Id}";
 		string nodeContent = node.Type switch
 		{
-			NodeType.Start => $"<path d='M {x - 60} {y} a 30 30 0 0 1 30 -30 h 60 a 30 30 0 0 1 30 30 v 0 a 30 30 0 0 1 -30 30 h -60 a 30 30 0 0 1 -30 -30 z' class='node start {highlightedClass}' fill='{pokemonColor}'></path><text x='{x}' y='{y}' fill='{textColor}' class='node-text' text-anchor='middle' dominant-baseline='middle'>{node.Title}</text>",
-			NodeType.Decision => $"<polygon points='{x - 0},{y - 30} {x + 100},{y + 0} {x - 0},{y + 30} {x - 100},{y + 0}' class='node decision {highlightedClass}' fill='{pokemonColor}'></polygon><text x='{x}' y='{y + 0}' fill='{textColor}' class='node-text' text-anchor='middle' dominant-baseline='middle'>{node.Title}</text>",
-			NodeType.Action => $"<rect x='{x - 60}' y='{y - 30}' width='120' height='60' class='node action {highlightedClass}' fill='{pokemonColor}'></rect><text x='{x}' y='{y}' fill='{textColor}' class='node-text' text-anchor='middle' dominant-baseline='middle'>{node.Title}</text>",
+			NodeType.Start => $"<path id='{shapeId}' d='M {x - 60} {y} a 30 30 0 0 1 30 -30 h 60 a 30 30 0 0 1 30 30 v 0 a 30 30 0 0 1 -30 30 h -60 a 30 30 0 0 1 -30 -30 z' class='node start {highlightedClass} {selectedClass}' fill='{pokemonColor}'></path><text id='{textId}' x='{x}' y='{y}' fill='{textColor}' class='node-text {selectedClass}' text-anchor='middle' dominant-baseline='middle'>{node.Title}</text>",
+			NodeType.Decision => $"<polygon id='{shapeId}' points='{x - 0},{y - 30} {x + 100},{y + 0} {x - 0},{y + 30} {x - 100},{y + 0}' class='node decision {highlightedClass} {selectedClass}' fill='{pokemonColor}'></polygon><text id='{textId}' x='{x}' y='{y + 0}' fill='{textColor}' class='node-text {selectedClass}' text-anchor='middle' dominant-baseline='middle'>{node.Title}</text>",
+			NodeType.Action => $"<rect id='{shapeId}' x='{x - 60}' y='{y - 30}' width='120' height='60' class='node action {highlightedClass} {selectedClass}' fill='{pokemonColor}'></rect><text id='{textId}' x='{x}' y='{y}' fill='{textColor}' class='node-text {selectedClass}' text-anchor='middle' dominant-baseline='middle'>{node.Title}</text>",
 			_ => ""
 		};
 
@@ -450,7 +522,7 @@
 				if (childNode.ArrowLabel != null)
 				{
 					int textX = startX;
-					if(horizontalLength > 0)
+					if (horizontalLength > 0)
 					{
 						textX += 50;
 					}
@@ -459,15 +531,15 @@
 						textX -= 50;
 					}
 					int midY = startY + halfVertical;
-					if(horizontalLength == 0)
+					if (horizontalLength == 0)
 					{
-						arrowBuilder.Append($"<text x='{textX}' y='{startY+100}' class='arrow-label'>{childNode.ArrowLabel}</text>");
+						arrowBuilder.Append($"<text x='{textX}' y='{startY + 100}' class='arrow-label'>{childNode.ArrowLabel}</text>");
 					}
 					else
 					{
 						arrowBuilder.Append($"<text x='{textX}' y='{textY}' class='arrow-label' text-anchor='middle'>{childNode.ArrowLabel}</text>");
 
-					}	
+					}
 				}
 			}
 		}
@@ -506,8 +578,34 @@
 	private PanzoomOptions options = new PanzoomOptions
 		{
 			// 기존에 설정된 다른 옵션들
-			MaxScale = 15.0 // 
+			MaxScale = 15.0 //
 		};
+
+	// private async Task HandleKeyPress(KeyboardEventArgs e)
+	// {
+	// 	var currentPan = await panZoomComponent.GetPanAsync();
+	// 	var moveX = 0.0;
+	// 	var moveY = 0.0;
+
+	// 	switch (e.Key)
+	// 	{
+	// 		case "ArrowUp":
+	// 			moveY = -10; 위로 이동
+	// 			break;
+	// 		case "ArrowDown":
+	// 			moveY = 10; 아래로 이동
+	// 			break;
+	// 		case "ArrowLeft":
+	// 			moveX = -10; 왼쪽으로 이동
+	// 			break;
+	// 		case "ArrowRight":
+	// 			moveX = 10; 오른쪽으로 이동
+	// 			break;
+	// 	}
+
+	// 	await panZoomComponent.PanAsync(currentPan.X + moveX, currentPan.Y + moveY);
+	// }
+
 
 
 	// Node 포켓몬 목록
@@ -528,7 +626,7 @@
 	private List<AbilityInfo> DangerousAbilities;
 
 	// 기술
-	private List<int> allDangerMoveIds; 
+	private List<int> allDangerMoveIds;
 	private List<int> ghostIds; // 목숨걸기, 교체불가 기술
 	private List<int> explosionIds;
 	private List<int> giftIds;
@@ -609,6 +707,7 @@
 	{
 		FlowNode startNode = new FlowNode
 			{
+				Id = 0,
 				Type = NodeType.Start,
 				Title = "시작",
 				X = 8000,
@@ -618,6 +717,7 @@
 
 		var decision1 = new FlowNode
 			{
+				Id = 1,
 				Type = NodeType.Decision,
 				Title = "목숨걸기나 교체불가기 보유?",
 				X = 0,
@@ -627,6 +727,7 @@
 
 		var decision1_yes1 = new FlowNode
 			{
+				Id = 2,
 				Type = NodeType.Action,
 				Title = "고스트 선두 or 테라스탈",
 				X = -150,
@@ -639,6 +740,7 @@
 		// 결정 노드 생성
 		FlowNode decision2 = new FlowNode
 			{
+				Id = 3,
 				Type = NodeType.Decision,
 				Title = "폭발기 보유?",
 				X = 0,
@@ -648,6 +750,7 @@
 
 		var decision2_1 = new FlowNode
 			{
+				Id = 4,
 				Type = NodeType.Decision,
 				Title = "화학변화가스?",
 				X = -600,
@@ -656,6 +759,7 @@
 		allNodes.Add(decision2_1);
 		var decision2_1_yes1 = new FlowNode
 			{
+				Id = 5,
 				Type = NodeType.Action,
 				Title = "둥실라이드 봉인",
 				UsedPokemon = Pokemon6,
@@ -665,6 +769,7 @@
 		allNodes.Add(decision2_1_yes1);
 		var decision2_1_yes2 = new FlowNode
 			{
+				Id = 6,
 				Type = NodeType.Action,
 				Title = "드레디어 앙코르 동료만들기",
 				UsedPokemon = Pokemon5,
@@ -674,6 +779,7 @@
 		allNodes.Add(decision2_1_yes2);
 		var decision2_1_no1 = new FlowNode
 			{
+				Id = 7,
 				Type = NodeType.Action,
 				Title = "골덕 선두",
 				UsedPokemon = Pokemon3,
@@ -685,6 +791,7 @@
 
 		var decision3 = new FlowNode
 			{
+				Id = 8,
 				Type = NodeType.Decision,
 				Title = "멸망의노래 or 추억의선물?",
 				X = 0,
@@ -694,6 +801,7 @@
 
 		var decision3_1 = new FlowNode
 			{
+				Id = 9,
 				Type = NodeType.Decision,
 				Title = "4 변화기 포켓몬?",
 				X = 450,
@@ -703,6 +811,7 @@
 
 		var decision3_1_yes1 = new FlowNode
 			{
+				Id = 10,
 				Type = NodeType.Action,
 				Title = "날개치는머리 봉인",
 				UsedPokemon = Pokemon9,
@@ -713,6 +822,7 @@
 
 		var decision3_1_yes2 = new FlowNode
 			{
+				Id = 11,
 				Type = NodeType.Action,
 				Title = "골덕 앙코르",
 				UsedPokemon = Pokemon3,
@@ -723,6 +833,7 @@
 
 		var decision3_2 = new FlowNode
 			{
+				Id = 12,
 				Type = NodeType.Decision,
 				Title = "도발 무시 특성?",
 				X = -150,
@@ -732,26 +843,49 @@
 
 		var decision3_2_yes1 = new FlowNode
 			{
+				Id = 13,
 				Type = NodeType.Action,
 				Title = "루차불 도발",
 				UsedPokemon = Pokemon8,
 				X = -150,
 				Y = 100,
+				SelectMoveLogic = pokemon =>
+				{
+					// DamageClassId가 1인 기술을 제외하고 필터링
+					var filteredMoves = pokemon.PossibleMoves
+						.Where(moveId => moveId != -1 && !AllMoves.Any(move => move.Id == moveId && move.DamageClassId == 1))
+						.ToList();
+
+					return filteredMoves;
+				}
 			};
 		allNodes.Add(decision3_2_yes1);
 
 		var decision3_2_no1 = new FlowNode
 			{
+				Id = 14,
 				Type = NodeType.Action,
 				Title = "도발",
 				X = 150,
 				Y = 100,
+
+				SelectMoveLogic = pokemon =>
+				{
+					// DamageClassId가 3인 기술을 제외하고 필터링
+					var filteredMoves = pokemon.PossibleMoves
+						.Where(moveId => moveId != -1 && !AllMoves.Any(move => move.Id == moveId && move.DamageClassId == 1))
+						.ToList();
+						Console.WriteLine(pokemon.PossibleMoves);
+					return filteredMoves;
+				}
 			};
 		allNodes.Add(decision3_2_no1);
 
 
+
 		var decision4 = new FlowNode
 			{
+				Id = 15,
 				Type = NodeType.Decision,
 				Title = "전부 위험기술?",
 				X = 0,
@@ -761,6 +895,7 @@
 
 		var decision4_no1 = new FlowNode
 			{
+				Id = 16,
 				Type = NodeType.Action,
 				Title = "안전한 기술 앙코르",
 				X = 0,
@@ -768,23 +903,26 @@
 
 				SelectMoveLogic = pokemon =>
 				{
-					var validMoves = pokemon.Moves.Where(moveId => !allDangerMoveIds.Contains(moveId) && moveId != -1).ToList();
+					// 먼저 위험 기술과 -1을 제외한 기술 ID 필터링
+					var validMoves = pokemon.PossibleMoves
+						.Where(moveId => !allDangerMoveIds.Contains(moveId) && moveId != -1)
+						.ToList();
 
-					// 조건에 맞는 기술을 선택
-					var selectedMoveId = validMoves
-						.Select(moveId => Moves.FirstOrDefault(move => move.Id == moveId))
+					// AllMoves에서 해당 기술 ID를 찾고 추가 조건에 맞는 기술 선택
+					return validMoves
+						.Select(moveId => AllMoves.FirstOrDefault(move => move.Id == moveId))
 						.Where(move => move != null && move.Pp != 5 && move.Power.HasValue)
-						.OrderBy(move => move.Power)
-						.FirstOrDefault()?.Id;
-
-					return selectedMoveId ?? -1; // 조건에 맞는 기술이 없는 경우 -1 반환
+						.Select(move => move.Id)
+						.ToList();
 				}
 			};
 		allNodes.Add(decision4_no1);
 
 
+
 		var decision_defense = new FlowNode
 			{
+				Id = 17,
 				Type = NodeType.Decision,
 				Title = "방/특방 감소 기술 있음?",
 				X = -300,
@@ -794,6 +932,7 @@
 
 		var decision_defense_yes1 = new FlowNode
 			{
+				Id = 18,
 				Type = NodeType.Decision,
 				Title = "스탯 6랭크 깎여도 버틸 수 있음?",
 				X = 150,
@@ -803,6 +942,7 @@
 
 		var decision_defense_yes2 = new FlowNode
 			{
+				Id = 19,
 				Type = NodeType.Action,
 				Title = "이 기술 앙코르로 고정",
 				X = 0,
@@ -810,30 +950,23 @@
 
 				SelectMoveLogic = pokemon =>
 				{
-					// 유효한 기술 필터링
-					var validMoves = pokemon.Moves
-						.Where(moveId => moveId != -1 && !allDangerMoveIds.Contains(moveId))
+					var validMoves = pokemon.PossibleMoves
+						.Where(moveId => moveId != -1 && defenseIds.Contains(moveId))
 						.ToList();
 
-					// defenseIds 리스트에 있는 기술만 필터링
-					var defenseMoves = validMoves
-						.Where(moveId => defenseIds.Contains(moveId))
-						.ToList();
-
-					// 조건에 맞는 기술을 선택
-					var selectedMoveId = defenseMoves
-						.Select(moveId => Moves.FirstOrDefault(move => move.Id == moveId))
+					// 조건에 맞는 기술들을 선택하여 리스트로 반환
+					return validMoves
+						.Select(moveId => AllMoves.FirstOrDefault(move => move.Id == moveId))
 						.Where(move => move != null && move.Pp != 5 && move.Power.HasValue)
-						.OrderBy(move => move.Power)
-						.FirstOrDefault()?.Id;
-
-					return selectedMoveId ?? -1; // 조건에 맞는 기술이 없는 경우 -1 반환
+						.Select(move => move.Id)
+						.ToList();
 				}
 			};
 		allNodes.Add(decision_defense_yes2);
 
 		var decision_abilSwapEarly = new FlowNode
 			{
+				Id = 20,
 				Type = NodeType.Decision,
 				Title = "특성 교체 가능?",
 				X = -150,
@@ -843,6 +976,7 @@
 
 		var decision_recoil = new FlowNode
 			{
+				Id = 21,
 				Type = NodeType.Decision,
 				Title = "반동기 있음?",
 				X = -300,
@@ -852,15 +986,30 @@
 
 		var decision_recoil_yes1 = new FlowNode
 			{
+				Id = 22,
 				Type = NodeType.Action,
 				Title = "반동기 앙코르",
 				X = -150,
 				Y = 100,
+				SelectMoveLogic = pokemon =>
+				{
+					var validMoves = pokemon.PossibleMoves
+						.Where(moveId => moveId != -1 && recoilIds.Contains(moveId))
+						.ToList();
+
+					// 조건에 맞는 기술들을 선택하여 리스트로 반환
+					return validMoves
+						.Select(moveId => AllMoves.FirstOrDefault(move => move.Id == moveId))
+						.Where(move => move != null && move.Pp != 5 && move.Power.HasValue)
+						.Select(move => move.Id)
+						.ToList();
+				}
 			};
 		allNodes.Add(decision_recoil_yes1);
 
 		var decision_recoil_yes2 = new FlowNode
 			{
+				Id = 23,
 				Type = NodeType.Action,
 				Title = "픽시 스킬스왑",
 				UsedPokemon = Pokemon4,
@@ -871,6 +1020,7 @@
 
 		var decision_thrash = new FlowNode
 			{
+				Id = 24,
 				Type = NodeType.Decision,
 				Title = "난동기 있음?",
 				X = 150,
@@ -880,15 +1030,30 @@
 
 		var decision_thrash_yes1 = new FlowNode
 			{
+				Id = 25,
 				Type = NodeType.Action,
 				Title = "난동기 앙코르",
 				X = -150,
 				Y = 100,
+				SelectMoveLogic = pokemon =>
+				{
+					var validMoves = pokemon.PossibleMoves
+						.Where(moveId => moveId != -1 && thrashIds.Contains(moveId))
+						.ToList();
+
+					// 조건에 맞는 기술들을 선택하여 리스트로 반환
+					return validMoves
+						.Select(moveId => AllMoves.FirstOrDefault(move => move.Id == moveId))
+						.Where(move => move != null && move.Pp != 5 && move.Power.HasValue)
+						.Select(move => move.Id)
+						.ToList();
+				}
 			};
 		allNodes.Add(decision_thrash_yes1);
 
 		var decision_thrash_yes2 = new FlowNode
 			{
+				Id = 26,
 				Type = NodeType.Action,
 				Title = "드레디어 동료만들기",
 				UsedPokemon = Pokemon5,
@@ -899,6 +1064,7 @@
 
 		var decision_thrash_yes3 = new FlowNode
 			{
+				Id = 27,
 				Type = NodeType.Action,
 				Title = "골덕 앙코르",
 				UsedPokemon = Pokemon3,
@@ -909,6 +1075,7 @@
 
 		var decision_priority = new FlowNode
 			{
+				Id = 28,
 				Type = NodeType.Decision,
 				Title = "우선도 높은 기술 있음?",
 				X = -300,
@@ -918,15 +1085,30 @@
 
 		var decision_priority_yes1 = new FlowNode
 			{
+				Id = 29,
 				Type = NodeType.Action,
 				Title = "선공기 쓴 턴에 앙코르",
 				X = 150,
 				Y = 100,
+				SelectMoveLogic = pokemon =>
+				{
+					var validMoves = pokemon.PossibleMoves
+						.Where(moveId => moveId != -1 && priorityIds.Contains(moveId))
+						.ToList();
+
+					// 조건에 맞는 기술들을 선택하여 리스트로 반환
+					return validMoves
+						.Select(moveId => AllMoves.FirstOrDefault(move => move.Id == moveId))
+						.Where(move => move != null && move.Pp != 5 && move.Power.HasValue)
+						.Select(move => move.Id)
+						.ToList();
+				}
 			};
 		allNodes.Add(decision_priority_yes1);
 
 		var decision_burn = new FlowNode
 			{
+				Id = 30,
 				Type = NodeType.Decision,
 				Title = "상태이상 기술 있음?",
 				X = 150,
@@ -936,6 +1118,7 @@
 
 		var decision_burn_yes1 = new FlowNode
 			{
+				Id = 31,
 				Type = NodeType.Action,
 				Title = "올리르바 화상 걸어두기",
 				UsedPokemon = Pokemon1,
@@ -946,15 +1129,30 @@
 
 		var decision_burn_yes2 = new FlowNode
 			{
+				Id = 32,
 				Type = NodeType.Action,
 				Title = "상태이상 기술 앙코르",
 				X = 0,
 				Y = 100,
+				SelectMoveLogic = pokemon =>
+				{
+					var validMoves = pokemon.PossibleMoves
+						.Where(moveId => moveId != -1 && burnIds.Contains(moveId))
+						.ToList();
+
+					// 조건에 맞는 기술들을 선택하여 리스트로 반환
+					return validMoves
+						.Select(moveId => AllMoves.FirstOrDefault(move => move.Id == moveId))
+						.Where(move => move != null && move.Pp != 5 && move.Power.HasValue)
+						.Select(move => move.Id)
+						.ToList();
+				}
 			};
 		allNodes.Add(decision_burn_yes2);
 
 		var decision_speed = new FlowNode
 			{
+				Id = 33,
 				Type = NodeType.Decision,
 				Title = "스피드 변화 기술 있음?",
 				X = -150,
@@ -964,15 +1162,30 @@
 
 		var decision_speed_yes1 = new FlowNode
 			{
+				Id = 34,
 				Type = NodeType.Action,
 				Title = "앙코르(플랜B고정)",
 				X = 150,
 				Y = 100,
+				SelectMoveLogic = pokemon =>
+				{
+					var validMoves = pokemon.PossibleMoves
+						.Where(moveId => moveId != -1 && speedIds.Contains(moveId))
+						.ToList();
+
+					// 조건에 맞는 기술들을 선택하여 리스트로 반환
+					return validMoves
+						.Select(moveId => AllMoves.FirstOrDefault(move => move.Id == moveId))
+						.Where(move => move != null && move.Pp != 5 && move.Power.HasValue)
+						.Select(move => move.Id)
+						.ToList();
+				}
 			};
 		allNodes.Add(decision_speed_yes1);
 
 		var action_unplayable = new FlowNode
 			{
+				Id = 35,
 				Type = NodeType.Start,
 				Title = "모든 기술이 위험함",
 				X = -150,
@@ -982,6 +1195,7 @@
 
 		var decision_abilSwap = new FlowNode
 			{
+				Id = 36,
 				Type = NodeType.Decision,
 				Title = "특성 교체 가능?",
 				X = -300,
@@ -993,6 +1207,7 @@
 
 		var actionA_soak = new FlowNode
 			{
+				Id = 37,
 				Type = NodeType.Action,
 				Title = "골덕 물붓기",
 				UsedPokemon = Pokemon3,
@@ -1003,6 +1218,7 @@
 
 		var actionA_encore_before_faster = new FlowNode
 			{
+				Id = 38,
 				Type = NodeType.Action,
 				Title = "앙코르 갱신",
 				X = -0,
@@ -1012,6 +1228,7 @@
 
 		var actionA_decision_skillSwap = new FlowNode
 			{
+				Id = 39,
 				Type = NodeType.Decision,
 				Title = "스킬스왑 사용 가능?",
 				X = -0,
@@ -1021,6 +1238,7 @@
 
 		var actionA_decision_skillSwap_no1 = new FlowNode
 			{
+				Id = 40,
 				Type = NodeType.Action,
 				Title = "드레디어 동료만들기",
 				UsedPokemon = Pokemon5,
@@ -1031,6 +1249,7 @@
 
 		var actionA_decision_faster = new FlowNode
 			{
+				Id = 41,
 				Type = NodeType.Decision,
 				Title = "상대가 대로트보다 빠름?",
 				X = -150,
@@ -1040,6 +1259,7 @@
 
 		var actionA_decision_faster_yes1 = new FlowNode
 			{
+				Id = 42,
 				Type = NodeType.Action,
 				Title = "깜까미 구애안경 트릭",
 				UsedPokemon = Pokemon7,
@@ -1050,6 +1270,7 @@
 
 		var actionA_decision_faster_yes2 = new FlowNode
 			{
+				Id = 43,
 				Type = NodeType.Action,
 				Title = "깜까미 앙코르",
 				UsedPokemon = Pokemon7,
@@ -1060,6 +1281,7 @@
 
 		var actionA_decision_faster_no1 = new FlowNode
 			{
+				Id = 44,
 				Type = NodeType.Action,
 				Title = "대로트 구애안경 트릭",
 				UsedPokemon = Pokemon2,
@@ -1070,6 +1292,7 @@
 
 		var actionA_skillSwap = new FlowNode
 			{
+				Id = 45,
 				Type = NodeType.Action,
 				Title = "대로트 스킬스왑",
 				UsedPokemon = Pokemon2,
@@ -1080,6 +1303,7 @@
 
 		var actionA_leppa = new FlowNode
 			{
+				Id = 46,
 				Type = NodeType.Action,
 				Title = "픽시 앙코르 트릭",
 				UsedPokemon = Pokemon4,
@@ -1090,6 +1314,7 @@
 
 		var actionA_tera = new FlowNode
 			{
+				Id = 47,
 				Type = NodeType.Decision,
 				Title = "고정된 기술 불타입?",
 				X = 0,
@@ -1099,6 +1324,7 @@
 
 		var actionA_tera_yes1 = new FlowNode
 			{
+				Id = 48,
 				Type = NodeType.Action,
 				Title = "올리르바 물 테라스탈",
 				UsedPokemon = Pokemon1,
@@ -1109,10 +1335,12 @@
 
 		var actionA_end = new FlowNode
 			{
+				Id = 49,
 				Type = NodeType.Start,
 				Title = "플랜A 시작",
 				X = 150,
 				Y = 200,
+				IsDamageCalc = true,
 			};
 		allNodes.Add(actionA_end);
 
@@ -1120,6 +1348,7 @@
 
 		var decision_flingSurvive = new FlowNode
 			{
+				Id = 50,
 				Type = NodeType.Decision,
 				Title = "올리르바 내던지기 버팀?",
 				X = -0,
@@ -1130,6 +1359,7 @@
 
 		var actionB_burn = new FlowNode
 			{
+				Id = 51,
 				Type = NodeType.Action,
 				Title = "올리르바 화상 걸어두기",
 				UsedPokemon = Pokemon1,
@@ -1140,6 +1370,7 @@
 
 		var actionB_impossible = new FlowNode
 			{
+				Id = 52,
 				Type = NodeType.Start,
 				Title = "플랜B 사용 불가능",
 				X = -150,
@@ -1149,6 +1380,7 @@
 
 		var actionB_decision_ability = new FlowNode
 			{
+				Id = 53,
 				Type = NodeType.Decision,
 				Title = "위험한 특성?",
 				X = -0,
@@ -1158,6 +1390,7 @@
 
 		var actionB_skillSwap = new FlowNode
 			{
+				Id = 54,
 				Type = NodeType.Action,
 				Title = "골덕 스킬스왑",
 				UsedPokemon = Pokemon3,
@@ -1168,6 +1401,7 @@
 
 		var actionB_soak = new FlowNode
 			{
+				Id = 55,
 				Type = NodeType.Action,
 				Title = "골덕 물붓기",
 				UsedPokemon = Pokemon3,
@@ -1178,6 +1412,7 @@
 
 		var actionB_decision_faster = new FlowNode
 			{
+				Id = 56,
 				Type = NodeType.Decision,
 				Title = "상대가 대로트보다 빠름?",
 				X = -150,
@@ -1187,6 +1422,7 @@
 
 		var actionB_decision_faster_yes1 = new FlowNode
 			{
+				Id = 57,
 				Type = NodeType.Action,
 				Title = "깜까미 구애안경 트릭",
 				UsedPokemon = Pokemon7,
@@ -1197,6 +1433,7 @@
 
 		var actionB_decision_faster_no1 = new FlowNode
 			{
+				Id = 58,
 				Type = NodeType.Action,
 				Title = "대로트 구애안경 트릭",
 				UsedPokemon = Pokemon2,
@@ -1207,6 +1444,7 @@
 
 		var actionB_tera = new FlowNode
 			{
+				Id = 59,
 				Type = NodeType.Decision,
 				Title = "고정된 기술 불타입?",
 				X = 0,
@@ -1216,6 +1454,7 @@
 
 		var actionB_tera_yes1 = new FlowNode
 			{
+				Id = 60,
 				Type = NodeType.Action,
 				Title = "올리르바 물 테라스탈",
 				UsedPokemon = Pokemon1,
@@ -1226,10 +1465,12 @@
 
 		var actionB_end = new FlowNode
 			{
+				Id = 61,
 				Type = NodeType.Start,
 				Title = "플랜B 시작",
 				X = 150,
 				Y = 200,
+				IsDamageCalc = true,
 			};
 		allNodes.Add(actionB_end);
 
@@ -1285,7 +1526,7 @@
 
 		decision_recoil.Children.Add(new Child(decision_thrash, (pokemon) => !CheckMoves(pokemon, recoilIds), "No"));
 		decision_recoil.Children.Add(new Child(decision_recoil_yes1, (pokemon) => CheckMoves(pokemon, recoilIds), "Yes"));
-		decision_recoil_yes1.Children.Add(new Child(decision_recoil_yes2, null,  null));
+		decision_recoil_yes1.Children.Add(new Child(decision_recoil_yes2, null, null));
 
 		decision_thrash.Children.Add(new Child(decision_burn, (pokemon) => !CheckMoves(pokemon, thrashIds), "No"));
 		decision_thrash.Children.Add(new Child(decision_thrash_yes1, (pokemon) => CheckMoves(pokemon, thrashIds), "Yes"));
@@ -1309,7 +1550,7 @@
 		decision_priority_yes1.Children.Add(new Child(decision_abilSwap, null, null));
 
 		// 내던지기 버티나?
-		decision_abilSwap.Children.Add(new Child(decision_flingSurvive, (pokemon) => CheckAbilities(pokemon,cantChangeIds), "No"));
+		decision_abilSwap.Children.Add(new Child(decision_flingSurvive, (pokemon) => CheckAbilities(pokemon, cantChangeIds), "No"));
 		decision_speed_yes1.Children.Add(new Child(decision_flingSurvive, null, null));
 		decision_thrash_yes3.Children.Add(new Child(decision_flingSurvive, null, null));
 		decision2_1_yes2.Children.Add(new Child(decision_flingSurvive, null, null));
@@ -1323,7 +1564,7 @@
 
 		actionA_decision_skillSwap.Children.Add(new Child(actionA_decision_faster, (pokemon) => !CheckAbilities(pokemon, skillSwapIds), "Yes"));
 		actionA_decision_skillSwap.Children.Add(new Child(actionA_decision_skillSwap_no1, (pokemon) => !CheckAbilities(pokemon, skillSwapIds), "No"));
-		actionA_decision_skillSwap_no1.Children.Add(new Child(actionA_decision_faster, null,null));
+		actionA_decision_skillSwap_no1.Children.Add(new Child(actionA_decision_faster, null, null));
 		actionA_decision_faster.Children.Add(new Child(actionA_decision_faster_yes1, (pokemon) => pokemon.NodeList.Contains(decision_priority_yes1), "Yes"));
 		actionA_decision_faster_yes1.Children.Add(new Child(actionA_decision_faster_yes2, null, null));
 		actionA_decision_faster.Children.Add(new Child(actionA_decision_faster_no1, (pokemon) => !pokemon.NodeList.Contains(decision_priority_yes1), "No"));
@@ -1388,7 +1629,7 @@
 	public static bool Check4StatusMoves(WildPokemon pokemon)
 	{
 		var isSpecial = new Func<int, bool>(moveId =>
-			Moves.Any(move => move.Id == moveId && move.DamageClassId == 3));
+			AllMoves.Any(move => move.Id == moveId && move.DamageClassId == 1));
 
 		return pokemon.Moves.All(move => move != -1 && isSpecial(move));
 	}
@@ -1420,7 +1661,6 @@
 	public void RunSimulation(WildPokemon pokemon)
 	{
 		pokemon.NodeList = new List<FlowNode>();
-		pokemon.FlingSurvivalOutcome = IsSurviveFling(pokemon);
 		CalculateDangerMoveCount(pokemon);
 
 		// 하이라이트 초기화
@@ -1432,7 +1672,7 @@
 				child.IsHighlightedLine = false;
 			}
 		}
-
+		pokemon.PossibleMoves = pokemon.Moves; // 가능한 기술 초기화
 		selectedPokemon = pokemon;
 
 		FlowNode startNode = allNodes.FirstOrDefault(node => node.Type == NodeType.Start);
@@ -1452,6 +1692,11 @@
 		currentNode.IsHighlighted = true;
 		pokemon.NodeList.Add(currentNode);
 		int nextNode = 0;
+		// 데미지 계산해야되면 계산
+		if (currentNode.IsDamageCalc && pokemon.PossibleMoves.Count != 0)
+		{
+			pokemon.ArbolivaDamage = GetAttackDamage(pokemon, pokemon.PossibleMoves[0]);
+		}
 		// 현재 노드가 결정 노드인 경우
 		if (currentNode.Type == NodeType.Decision)
 		{
@@ -1467,8 +1712,12 @@
 		}
 		currentNode.ExecuteSelectMoveLogic(pokemon);
 
+
+
 		if (currentNode.Children.Count == 0)
 		{
+			// 마무리
+			pokemon.FlingSurvivalOutcome = IsSurviveFling(pokemon);
 			return;
 		}
 		else
@@ -1517,7 +1766,67 @@
 		{
 			return SurvivalOutcome.CannotSurvive;
 		}
+
+	}
+
+	public int GetAttackDamage(WildPokemon pokemon, int moveId)
+	{
+
+		MoveCSV attack = AllMoves.FirstOrDefault(move => move.Id == moveId);
 		
+		// 종족값 계산
+		int attackStat = dataService.PokemonStats.FirstOrDefault(stat => stat.PokemonId == pokemon.Id && stat.StatId == 2)?.BaseStat ?? 0;
+		int specialAttackStat = dataService.PokemonStats.FirstOrDefault(stat => stat.PokemonId == pokemon.Id && stat.StatId == 4)?.BaseStat ?? 0;
+
+		// 올리르바 레벨은 79, HP는 286, 방어는 172, 특수방어는 201
+
+		if (!attack.Power.HasValue)
+		{
+			return 0; // 기술의 파워가 설정되지 않은 경우
+		}
+
+		int actualAttack = (int)Math.Floor((Math.Floor((attackStat * 2 + 31) * pokemon.Level / 100.0) + 5) * 1.1);
+		int actualSpecialAttack = (int)Math.Floor((Math.Floor((specialAttackStat * 2 + 31) * pokemon.Level / 100.0) + 5) * 1.1);
+		double damageCalc;
+
+		if (attack.DamageClassId == 2)
+		{
+			damageCalc = Math.Floor(Math.Floor((((2 * pokemon.Level / 5) + 2) * attack.Power.Value * actualAttack / 172.0 / 50) + 2) * 1.5);
+		}
+		else if (attack.DamageClassId == 3)
+		{
+			damageCalc = Math.Floor(Math.Floor((((2 * pokemon.Level / 5) + 2) * attack.Power.Value * actualSpecialAttack / 201.0 / 50) + 2) * 1.5);
+		}
+		else
+		{
+			damageCalc = 0;
+		}
+
+		if(defenseIds.Contains(attack.Id)) // 방깎 기술
+		{
+			damageCalc = Math.Floor (damageCalc * 4);
+		}
+
+		if (attack.TypeId == 5 || attack.TypeId == 9 || attack.TypeId == 12 || attack.TypeId == 13 || attack.TypeId == 15)
+		{
+			damageCalc = Math.Floor(damageCalc / 2);
+		}
+		else if (attack.TypeId == 11)
+		{
+			damageCalc = Math.Floor( damageCalc / 4);
+		}
+		else if (attack.TypeId == 8)
+		{
+			damageCalc = 0;
+		}
+
+		if (pokemon.IsBurned)
+		{
+			damageCalc += 17;
+		}
+
+
+		return (int)(damageCalc);
 	}
 
 
@@ -1525,7 +1834,7 @@
 	public string GetMoveNameById(int moveId)
 	{
 		var matchingMoveName = MoveNames.FirstOrDefault(mn => mn.MoveId == moveId && mn.LocalLanguageId == CurrentLanguageId);
-		return matchingMoveName?.Name ?? $"Move {moveId}";
+		return matchingMoveName?.Name ?? $" - ";
 	}
 
 	public string GetAbilityNameById(int abilityId)

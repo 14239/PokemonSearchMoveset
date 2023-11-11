@@ -41,6 +41,7 @@ public class Child
 
 public class FlowNode
 {
+	public int Id { get; set; } = 0;
 	public NodeType Type { get; set; }      // 사각형인지 마름모인지
 
 	public List<Child> Children { get; set; } = new(); // 이어지는 자식 노드
@@ -50,15 +51,15 @@ public class FlowNode
 	public NodePokemon UsedPokemon { get; set; }        // 노드를 실행하는데 사용되는 포켓몬
 	
 	// 기술 선택
-	public Func<WildPokemon, int> SelectMoveLogic { get; set; }
+    public Func<WildPokemon, List<int>> SelectMoveLogic { get; set; }
 
-	public void ExecuteSelectMoveLogic(WildPokemon pokemon)
-	{
-		if (SelectMoveLogic != null && pokemon.SelectedMove == -1)
-		{
-			pokemon.SelectedMove = SelectMoveLogic(pokemon);
-		}
-	}
+    public void ExecuteSelectMoveLogic(WildPokemon pokemon)
+    {
+        if (SelectMoveLogic != null)
+        {
+            pokemon.PossibleMoves = SelectMoveLogic(pokemon);
+        }
+    }
 
 
 	public int X { get; set; }
@@ -78,7 +79,8 @@ public class FlowNode
 
 	public bool IsHighlighted { get; set; }
 	public bool IsLong { get; set; }		// 긴 노드일때 대비
-
+	public bool IsBurned { get; set; }		// 올리르바 화상 거는 노드
+	public bool IsDamageCalc { get; set; }
 }
 
 
