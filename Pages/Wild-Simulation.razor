@@ -16,7 +16,6 @@
 @using System.Collections.Generic
 @using BlazorPanzoom
 
-
 <div tabindex="0" class="flow-chart-wrapper">
 	<div class="pokemon-info">
 		@if (selectedPokemon != null)
@@ -94,7 +93,7 @@
 		</PagerContent>
 	</MudTable>
 	*@
-	<MudDataGrid Items="@wildPokemons" Filterable="true" Striped="true" Bordered="true" Hover="true" RowsPerPage="10" HorizontalScrollbar="true" Style="width: 1920px;">
+	<MudDataGrid Items="@wildPokemons" QuickFilter ="@FilterFunc" Filterable="true" Striped="true" Bordered="true" Hover="true" RowsPerPage="10" HorizontalScrollbar="true" Style="width: 1920px;">
 		<Columns>
 			<PropertyColumn Property="x => x.Id" Title="User ID" />
 			<PropertyColumn Property="x => x.Name" Title="Name" />
@@ -106,15 +105,14 @@
 			<PropertyColumn Property="x => GetMoveNameById(x.Moves[1])" Title="Move2" />
 			<PropertyColumn Property="x => GetMoveNameById(x.Moves[2])" Title="Move3" />
 			<PropertyColumn Property="x => GetMoveNameById(x.Moves[3])" Title="Move4" />
-			<PropertyColumn Property="x => GetMoveNameById(x.PossibleMoves.FirstOrDefault())" Title="Selected Move" />
-			<PropertyColumn Property="x => x.DangerMoveCount" Title="DangerCount" />
+			<PropertyColumn Property="x => GetMoveNameById(x.PossibleMoves.FirstOrDefault())" Title="고정된 기술" />
 			<PropertyColumn Property="x => x.FlingSurvivalOutcome" Title="내구력" />	
 			<PropertyColumn Property="x => x.ArbolivaDamage" Title="올리르바 데미지" />
 			<TemplateColumn Title="Actions">
 				<CellTemplate>
 					<MudStack Row>
-						<MudButton @onclick="() => ShowLog(context.Item)" Size="@Size.Small" Variant="@Variant.Filled" Color="@Color.Primary">Show Log</MudButton>
 						<MudButton @onclick="() => RunSimulation(context.Item)" Size="@Size.Small" Variant="@Variant.Filled" Color="@Color.Primary">Run Simulation</MudButton>
+						<MudButton @onclick="() => ShowLog(context.Item)" Size="@Size.Small" Variant="@Variant.Filled" Color="@Color.Primary">Show Log</MudButton>
 					</MudStack>
 				</CellTemplate>
 			</TemplateColumn>
@@ -151,6 +149,7 @@
 		</ul>
 	</div>
 </div>
+@GetAttackDamageCount
 
 
 @if (selectedPokemonForLog != null)
@@ -265,13 +264,13 @@
 
 		public List<int> PossibleMoves { get; set; } = new List<int>();
 		public List<int> Moves { get; set; } = new List<int>();
+		public Dictionary<int, int> MoveDamages { get; set; } = new Dictionary<int, int>();
 
 
 		public List<FlowNode> NodeList { get; set; } = new List<FlowNode>();
 		public List<NodePokemon> UsedPokemons { get; set; } = new List<NodePokemon>();
 		public PokemonLog Log { get; set; } = new PokemonLog(); // 로그 객체 포함
 
-		public string DangerMoveCount { get; set; }
 		public SurvivalOutcome FlingSurvivalOutcome { get; set; }
 		public bool IsBurned { get; set; }	// 올리르바 화상 여부
 		public int ArbolivaDamage { get; set; }
@@ -348,24 +347,17 @@
 	private bool striped = false;
 	private bool bordered = true;
 	private string searchString = "";
-	private List<FlowNode> selectedNodes = new List<FlowNode>();
 
 	private bool _selectOnRowClick = true;
 	private int rowsPerPage = 10;  // 초기 페이지당 행 수
 
-	private bool FilterFunc(WildPokemon pokemon)
+	private List<FlowNode> selectedNodes = new List<FlowNode>();
+
+	private Func<WildPokemon, bool> FilterFunc => pokemon =>
 	{
-		// 검색 조건 확인
-		bool matchesSearch = string.IsNullOrWhiteSpace(searchString) ||
-			pokemon.Name?.Contains(searchString, StringComparison.OrdinalIgnoreCase) == true ||
-			pokemon.DangerMoveCount?.Contains(searchString, StringComparison.OrdinalIgnoreCase) == true;
-
-		// 선택된 노드에 해당하는 포켓몬인지 확인
-		bool matchesNodeSelection = selectedNodes.Count == 0 ||
-			selectedNodes.All(node => pokemon.NodeList.Contains(node));
-
-		return matchesSearch && matchesNodeSelection;
-	}
+		// 모든 선택된 노드를 만족하는 포켓몬만 필터링
+		return selectedNodes.All(node => pokemon.NodeList.Contains(node));
+	};
 
 
 
@@ -630,7 +622,8 @@
 	private List<int> ghostIds; // 목숨걸기, 교체불가 기술
 	private List<int> explosionIds;
 	private List<int> giftIds;
-	private List<int> defenseIds;
+	private List<int> statChangeAttackIds;
+	private List<int> selfDefenseLowerIds;
 	private List<int> recoilIds;
 	private List<int> thrashIds;
 	private List<int> priorityIds;
@@ -667,7 +660,7 @@
 		giftIds = DangerousMoves.Where(m => m.TierName == "사용 절대금지" && m.Category == "희생변화기")
 								.Select(m => m.MoveId)
 								.ToList();
-		defenseIds = DangerousMoves.Where(m => m.Tier == 6)
+		statChangeAttackIds = DangerousMoves.Where(m => m.Tier == 6)
 								.Select(m => m.MoveId)
 								.ToList();
 		recoilIds = DangerousMoves.Where(m => m.Tier == 11)
@@ -685,7 +678,9 @@
 		speedIds = DangerousMoves.Where(m => m.Tier == 3)
 								.Select(m => m.MoveId)
 								.ToList();
-
+		selfDefenseLowerIds = DangerousMoves.Where(m => m.Tier == 13)
+								.Select(m => m.MoveId)
+								.ToList();
 
 		gasIds = DangerousAbilities.Where(a => a.AbilityName == "화학변화가스")
 								.Select(a => a.AbilityId)
@@ -709,11 +704,19 @@
 			{
 				Id = 0,
 				Type = NodeType.Start,
-				Title = "시작",
+				Title = "데미지 100 이상 기술 제거",
 				X = 8000,
 				Y = 4000,
+				SelectMoveLogic = pokemon =>
+				{
+					// 조건에 맞는 기술들을 선택하여 리스트로 반환
+					return pokemon.PossibleMoves
+						.Where(moveId => moveId != -1 && pokemon.MoveDamages.TryGetValue(moveId, out int damage) && damage < 100)
+						.ToList();
+				}
 			};
 		allNodes.Add(startNode);
+
 
 		var decision1 = new FlowNode
 			{
@@ -803,7 +806,7 @@
 			{
 				Id = 9,
 				Type = NodeType.Decision,
-				Title = "4 변화기 포켓몬?",
+				Title = "도발 써도 됨?",
 				X = 450,
 				Y = 100,
 			};
@@ -817,6 +820,15 @@
 				UsedPokemon = Pokemon9,
 				X = 150,
 				Y = 200,
+				SelectMoveLogic = pokemon =>
+				{
+					// ID가 195와 262인 기술을 제외하고 필터링
+					var filteredMoves = pokemon.PossibleMoves
+						.Where(moveId => moveId != 195 && moveId != 262)
+						.ToList();
+
+					return filteredMoves;
+				}
 			};
 		allNodes.Add(decision3_1_yes1);
 
@@ -853,7 +865,7 @@
 				{
 					// DamageClassId가 1인 기술을 제외하고 필터링
 					var filteredMoves = pokemon.PossibleMoves
-						.Where(moveId => moveId != -1 && !AllMoves.Any(move => move.Id == moveId && move.DamageClassId == 1))
+						.Where(moveId => !AllMoves.Any(move => move.Id == moveId && move.DamageClassId == 1))
 						.ToList();
 
 					return filteredMoves;
@@ -873,7 +885,7 @@
 				{
 					// DamageClassId가 3인 기술을 제외하고 필터링
 					var filteredMoves = pokemon.PossibleMoves
-						.Where(moveId => moveId != -1 && !AllMoves.Any(move => move.Id == moveId && move.DamageClassId == 1))
+						.Where(moveId => !AllMoves.Any(move => move.Id == moveId && move.DamageClassId == 1))
 						.ToList();
 						Console.WriteLine(pokemon.PossibleMoves);
 					return filteredMoves;
@@ -900,23 +912,26 @@
 				Title = "안전한 기술 앙코르",
 				X = 0,
 				Y = 200,
-
 				SelectMoveLogic = pokemon =>
 				{
-					// 먼저 위험 기술과 -1을 제외한 기술 ID 필터링
+					// 위험 기술과 -1을 제외한 기술 ID 필터링
 					var validMoves = pokemon.PossibleMoves
-						.Where(moveId => !allDangerMoveIds.Contains(moveId) && moveId != -1)
+						.Where(moveId => moveId != -1 && !allDangerMoveIds.Contains(moveId))
 						.ToList();
 
-					// AllMoves에서 해당 기술 ID를 찾고 추가 조건에 맞는 기술 선택
+					// MoveDamages 딕셔너리에서 해당 기술 ID의 데미지를 찾고 정렬
 					return validMoves
-						.Select(moveId => AllMoves.FirstOrDefault(move => move.Id == moveId))
-						.Where(move => move != null && move.Pp != 5 && move.Power.HasValue)
-						.Select(move => move.Id)
+						.Where(moveId => pokemon.MoveDamages.ContainsKey(moveId))
+						.Select(moveId => new { MoveId = moveId, Damage = pokemon.MoveDamages[moveId] })
+						.OrderBy(x => x.Damage) // 데미지가 낮은 순으로 정렬
+						.Select(x => x.MoveId)
 						.ToList();
 				}
 			};
 		allNodes.Add(decision4_no1);
+
+
+
 
 
 
@@ -940,6 +955,8 @@
 			};
 		allNodes.Add(decision_defense_yes1);
 
+
+
 		var decision_defense_yes2 = new FlowNode
 			{
 				Id = 19,
@@ -951,13 +968,13 @@
 				SelectMoveLogic = pokemon =>
 				{
 					var validMoves = pokemon.PossibleMoves
-						.Where(moveId => moveId != -1 && defenseIds.Contains(moveId))
+						.Where(moveId => moveId != -1 && statChangeAttackIds.Contains(moveId))
 						.ToList();
 
 					// 조건에 맞는 기술들을 선택하여 리스트로 반환
 					return validMoves
 						.Select(moveId => AllMoves.FirstOrDefault(move => move.Id == moveId))
-						.Where(move => move != null && move.Pp != 5 && move.Power.HasValue)
+						.Where(move => move != null &&  move.Power.HasValue)
 						.Select(move => move.Id)
 						.ToList();
 				}
@@ -971,6 +988,15 @@
 				Title = "특성 교체 가능?",
 				X = -150,
 				Y = 200,
+				// 4배피해 기술 다 제거
+				SelectMoveLogic = pokemon =>
+				{
+					var validMoves = pokemon.PossibleMoves
+					.Where(moveId => moveId != -1 && !statChangeAttackIds.Contains(moveId))
+					.ToList();
+
+				return validMoves;
+				}
 			};
 		allNodes.Add(decision_abilSwapEarly);
 
@@ -1000,7 +1026,7 @@
 					// 조건에 맞는 기술들을 선택하여 리스트로 반환
 					return validMoves
 						.Select(moveId => AllMoves.FirstOrDefault(move => move.Id == moveId))
-						.Where(move => move != null && move.Pp != 5 && move.Power.HasValue)
+						.Where(move => move != null && move.Power.HasValue)
 						.Select(move => move.Id)
 						.ToList();
 				}
@@ -1044,7 +1070,7 @@
 					// 조건에 맞는 기술들을 선택하여 리스트로 반환
 					return validMoves
 						.Select(moveId => AllMoves.FirstOrDefault(move => move.Id == moveId))
-						.Where(move => move != null && move.Pp != 5 && move.Power.HasValue)
+						.Where(move => move != null && move.Power.HasValue)
 						.Select(move => move.Id)
 						.ToList();
 				}
@@ -1099,7 +1125,7 @@
 					// 조건에 맞는 기술들을 선택하여 리스트로 반환
 					return validMoves
 						.Select(moveId => AllMoves.FirstOrDefault(move => move.Id == moveId))
-						.Where(move => move != null && move.Pp != 5 && move.Power.HasValue)
+						.Where(move => move != null && move.Power.HasValue)
 						.Select(move => move.Id)
 						.ToList();
 				}
@@ -1143,7 +1169,7 @@
 					// 조건에 맞는 기술들을 선택하여 리스트로 반환
 					return validMoves
 						.Select(moveId => AllMoves.FirstOrDefault(move => move.Id == moveId))
-						.Where(move => move != null && move.Pp != 5 && move.Power.HasValue)
+						.Where(move => move != null && move.Power.HasValue)
 						.Select(move => move.Id)
 						.ToList();
 				}
@@ -1176,7 +1202,7 @@
 					// 조건에 맞는 기술들을 선택하여 리스트로 반환
 					return validMoves
 						.Select(moveId => AllMoves.FirstOrDefault(move => move.Id == moveId))
-						.Where(move => move != null && move.Pp != 5 && move.Power.HasValue)
+						.Where(move => move != null && move.Power.HasValue)
 						.Select(move => move.Id)
 						.ToList();
 				}
@@ -1340,7 +1366,6 @@
 				Title = "플랜A 시작",
 				X = 150,
 				Y = 200,
-				IsDamageCalc = true,
 			};
 		allNodes.Add(actionA_end);
 
@@ -1470,7 +1495,6 @@
 				Title = "플랜B 시작",
 				X = 150,
 				Y = 200,
-				IsDamageCalc = true,
 			};
 		allNodes.Add(actionB_end);
 
@@ -1515,10 +1539,19 @@
 		decision_priority.Children.Add(new Child(decision_priority_yes1, (pokemon) => CheckMoves(pokemon, priorityIds), "Yes"));
 
 
-		decision_defense.Children.Add(new Child(decision_defense_yes1, (pokemon) => CheckMoves(pokemon, defenseIds), "Yes"));
-		decision_defense.Children.Add(new Child(decision_abilSwapEarly, (pokemon) => !CheckMoves(pokemon, defenseIds), "No"));
-		decision_defense_yes1.Children.Add(new Child(decision_defense_yes2, null, "Yes"));
-		decision_defense_yes1.Children.Add(new Child(decision_abilSwapEarly, null, "No"));
+		decision_defense.Children.Add(new Child(decision_defense_yes1, (pokemon) => CheckMoves(pokemon, statChangeAttackIds), "Yes"));
+		decision_defense.Children.Add(new Child(decision_abilSwapEarly, (pokemon) => !CheckMoves(pokemon, statChangeAttackIds), "No"));
+		decision_defense_yes1.Children.Add(new Child(
+			decision_defense_yes2,
+			pokemon => pokemon.PossibleMoves.Any(moveId =>
+				statChangeAttackIds.Contains(moveId) && pokemon.MoveDamages.ContainsKey(moveId) && pokemon.MoveDamages[moveId] < 74),
+			"Yes"));
+
+		decision_defense_yes1.Children.Add(new Child(
+			decision_abilSwapEarly,
+			pokemon => !pokemon.PossibleMoves.Any(moveId =>
+				statChangeAttackIds.Contains(moveId) && pokemon.MoveDamages.ContainsKey(moveId) && pokemon.MoveDamages[moveId] < 74),
+			"No"));
 
 		decision_abilSwapEarly.Children.Add(new Child(decision_recoil, (pokemon) => !CheckAbilities(pokemon, cantChangeIds), "Yes"));
 		decision_abilSwapEarly.Children.Add(new Child(decision_burn, (pokemon) => CheckAbilities(pokemon, cantChangeIds), "No"));
@@ -1563,11 +1596,11 @@
 		actionA_encore_before_faster.Children.Add(new Child(actionA_decision_skillSwap, null, null));
 
 		actionA_decision_skillSwap.Children.Add(new Child(actionA_decision_faster, (pokemon) => !CheckAbilities(pokemon, skillSwapIds), "Yes"));
-		actionA_decision_skillSwap.Children.Add(new Child(actionA_decision_skillSwap_no1, (pokemon) => !CheckAbilities(pokemon, skillSwapIds), "No"));
+		actionA_decision_skillSwap.Children.Add(new Child(actionA_decision_skillSwap_no1, (pokemon) => CheckAbilities(pokemon, skillSwapIds), "No"));
 		actionA_decision_skillSwap_no1.Children.Add(new Child(actionA_decision_faster, null, null));
-		actionA_decision_faster.Children.Add(new Child(actionA_decision_faster_yes1, (pokemon) => pokemon.NodeList.Contains(decision_priority_yes1), "Yes"));
+		actionA_decision_faster.Children.Add(new Child(actionA_decision_faster_yes1, (pokemon) => (priorityIds.Contains(pokemon.PossibleMoves[0]) || speedIds.Contains(pokemon.PossibleMoves[0])), "Yes"));
 		actionA_decision_faster_yes1.Children.Add(new Child(actionA_decision_faster_yes2, null, null));
-		actionA_decision_faster.Children.Add(new Child(actionA_decision_faster_no1, (pokemon) => !pokemon.NodeList.Contains(decision_priority_yes1), "No"));
+		actionA_decision_faster.Children.Add(new Child(actionA_decision_faster_no1, (pokemon) => !(priorityIds.Contains(pokemon.PossibleMoves[0]) || speedIds.Contains(pokemon.PossibleMoves[0])), "No"));
 
 		actionA_decision_faster_yes2.Children.Add(new Child(actionA_skillSwap, null, null));
 		actionA_decision_faster_no1.Children.Add(new Child(actionA_skillSwap, null, null));
@@ -1591,9 +1624,9 @@
 
 		actionB_soak.Children.Add(new Child(actionB_decision_faster, null, null));
 
-		actionB_decision_faster.Children.Add(new Child(actionB_decision_faster_yes1, (pokemon) => pokemon.NodeList.Contains(decision_priority_yes1), "Yes"));
+		actionB_decision_faster.Children.Add(new Child(actionB_decision_faster_yes1, (pokemon) => (priorityIds.Contains(pokemon.PossibleMoves[0]) || speedIds.Contains(pokemon.PossibleMoves[0])), "Yes"));
 		actionB_decision_faster_yes1.Children.Add(new Child(actionB_tera, null, null));
-		actionB_decision_faster.Children.Add(new Child(actionB_decision_faster_no1, (pokemon) => !pokemon.NodeList.Contains(decision_priority_yes1), "No"));
+		actionB_decision_faster.Children.Add(new Child(actionB_decision_faster_no1, (pokemon) => !(priorityIds.Contains(pokemon.PossibleMoves[0]) || speedIds.Contains(pokemon.PossibleMoves[0])), "No"));
 		actionB_decision_faster_no1.Children.Add(new Child(actionB_tera, null, null));
 
 		actionB_tera.Children.Add(new Child(actionB_end, null, "No"));
@@ -1601,17 +1634,32 @@
 		actionB_tera_yes1.Children.Add(new Child(actionB_end, null, null));
 
 	}
-	public static bool CheckMoves(WildPokemon pokemon, List<int> ids)
+	public bool CheckMoves(WildPokemon pokemon, List<int> ids)
 	{
 		if (ids == null || ids.Count == 0) return false;
-		return pokemon.Moves.Any(move => ids.Contains(move));
+		return pokemon.PossibleMoves.Any(move => ids.Contains(move));
+	}
+	// 위험 기술 있는지 파악
+	public bool CheckAllMoves(WildPokemon pokemon, List<int> ids)
+	{
+		if (ids == null || ids.Count == 0) return false;
+
+		foreach (var moveId in pokemon.PossibleMoves)
+		{
+			if (moveId == -1) continue; // -1 제외
+			if (!ids.Contains(moveId)) // ids에 없는 경우, 데미지 계산
+			{
+				// 딕셔너리에서 데미지 확인
+				if (!pokemon.MoveDamages.TryGetValue(moveId, out int damage) || damage < 74)
+					return false; // 74 이상의 피해를 주지 않는 경우
+			}
+		}
+
+		return true; // 모든 조건을 만족하는 경우
 	}
 
-	public static bool CheckAllMoves(WildPokemon pokemon, List<int> ids)
-	{
-		if (ids == null || ids.Count == 0) return false;
-		return pokemon.Moves.All(move => move == -1 || ids.Contains(move));
-	}
+
+
 
 
 
@@ -1621,30 +1669,31 @@
 		return ids.Contains(pokemon.Ability);
 	}
 
-	public static bool CheckType(WildPokemon pokemon, string type)
+	public bool CheckType(WildPokemon pokemon, string type)
 	{
 		return pokemon.Type1 == type;
 	}
 
-	public static bool Check4StatusMoves(WildPokemon pokemon)
+	public bool Check4StatusMoves(WildPokemon pokemon)
 	{
-		var isSpecial = new Func<int, bool>(moveId =>
-			AllMoves.Any(move => move.Id == moveId && move.DamageClassId == 1));
+		// 특수 공격 (DamageClassId == 1)이 아닌 기술의 데미지 계산
+		foreach (var moveId in pokemon.PossibleMoves)
+		{
+			if (moveId != -1) // -1이 아닌 기술들만 확인
+			{
+				var move = AllMoves.FirstOrDefault(m => m.Id == moveId);
+				if (move != null && move.DamageClassId != 1)
+				{
+					// 딕셔너리에서 데미지 확인
+					if (!pokemon.MoveDamages.TryGetValue(moveId, out int damage) || damage < 74)
+						return false; // 74 이상의 피해를 주지 않는 경우
+				}
+			}
+		}
 
-		return pokemon.Moves.All(move => move != -1 && isSpecial(move));
+		return true; // 모든 기술이 조건을 만족하면 true 반환
 	}
 
-
-
-	private void CalculateDangerMoveCount(WildPokemon pokemon)
-	{
-		int dangerousMoveCount = 0;
-		List<int> dangerousMoveIds = DangerousMoves.Select(dm => dm.MoveId).ToList();
-
-		dangerousMoveCount = pokemon.Moves.Count(move => dangerousMoveIds.Contains(move));
-
-		pokemon.DangerMoveCount = $"{dangerousMoveCount} 개";
-	}
 
 	private void SimulationAll()
 	{
@@ -1661,7 +1710,7 @@
 	public void RunSimulation(WildPokemon pokemon)
 	{
 		pokemon.NodeList = new List<FlowNode>();
-		CalculateDangerMoveCount(pokemon);
+		CalculateMoveDamages(pokemon);
 
 		// 하이라이트 초기화
 		foreach (FlowNode node in allNodes)
@@ -1680,11 +1729,31 @@
 		{
 			GenerateSimulation(startNode, pokemon);
 		}
+		// 마무리
+		pokemon.FlingSurvivalOutcome = IsSurviveFling(pokemon);
+		if (pokemon.PossibleMoves.Count != 0)
+		{
+			pokemon.ArbolivaDamage = pokemon.MoveDamages[pokemon.PossibleMoves[0]];	
+		}
+		else
+		{
+			pokemon.ArbolivaDamage = -99;
+		}
 		StateHasChanged(); // UI 갱신을 트리거합니다.
 
 	}
 
-
+	private void CalculateMoveDamages(WildPokemon pokemon)
+	{
+		foreach (var moveId in pokemon.Moves)
+		{
+			if (moveId != -1) // 유효한 기술인 경우
+			{
+				int damage = GetAttackDamage(pokemon, moveId);
+				pokemon.MoveDamages[moveId] = damage;
+			}
+		}
+	}
 
 	public void GenerateSimulation(FlowNode currentNode, WildPokemon pokemon)
 	{
@@ -1692,11 +1761,12 @@
 		currentNode.IsHighlighted = true;
 		pokemon.NodeList.Add(currentNode);
 		int nextNode = 0;
-		// 데미지 계산해야되면 계산
-		if (currentNode.IsDamageCalc && pokemon.PossibleMoves.Count != 0)
+
+		if (currentNode.IsBurned)
 		{
-			pokemon.ArbolivaDamage = GetAttackDamage(pokemon, pokemon.PossibleMoves[0]);
+			pokemon.IsBurned = true;
 		}
+
 		// 현재 노드가 결정 노드인 경우
 		if (currentNode.Type == NodeType.Decision)
 		{
@@ -1716,8 +1786,7 @@
 
 		if (currentNode.Children.Count == 0)
 		{
-			// 마무리
-			pokemon.FlingSurvivalOutcome = IsSurviveFling(pokemon);
+
 			return;
 		}
 		else
@@ -1746,12 +1815,22 @@
 		// 실제 HP 및 방어 수치 계산
 		int actualHP = (int)Math.Floor(((hpStat * 2 + 100) * pokemon.Level / 100.0) + 10);
 		int actualDefense = (int)Math.Floor(((defenseStat * 2 * pokemon.Level / 100.0) + 5) * 0.9);
+		int statMultiplier = 1;
+		if(pokemon.PossibleMoves.Count != 0)
+		{
 
+			if (selfDefenseLowerIds.Contains(pokemon.PossibleMoves[0]))
+			{
+				statMultiplier = 4;
+			}
+		}
 		// 내던지기 피해량 계산
-		double flingDamageCalc = Math.Floor((((2 * 79 / 5) + 2) * 10 * 103 / (double)actualDefense / 50) + 2) * 1.5;
+		double flingDamageCalc = Math.Floor((((2 * 79 / 5) + 2) * 10 * 103 / Math.Floor((double)actualDefense / statMultiplier) / 50) + 2) * 1.5;
+
 		int flingDamage = (int)Math.Floor(flingDamageCalc);
 		int burnedFlingDamage = (int)Math.Floor(flingDamageCalc / 2);
 		int grassyTerrainRecovery = (int)Math.Floor(actualHP / 16.0) * 9;
+
 
 		// 생존 여부 결정
 		if (flingDamage <= grassyTerrainRecovery)
@@ -1769,11 +1848,13 @@
 
 	}
 
+	public int GetAttackDamageCount = 0;
+
 	public int GetAttackDamage(WildPokemon pokemon, int moveId)
 	{
 
 		MoveCSV attack = AllMoves.FirstOrDefault(move => move.Id == moveId);
-		
+
 		// 종족값 계산
 		int attackStat = dataService.PokemonStats.FirstOrDefault(stat => stat.PokemonId == pokemon.Id && stat.StatId == 2)?.BaseStat ?? 0;
 		int specialAttackStat = dataService.PokemonStats.FirstOrDefault(stat => stat.PokemonId == pokemon.Id && stat.StatId == 4)?.BaseStat ?? 0;
@@ -1787,11 +1868,17 @@
 
 		int actualAttack = (int)Math.Floor((Math.Floor((attackStat * 2 + 31) * pokemon.Level / 100.0) + 5) * 1.1);
 		int actualSpecialAttack = (int)Math.Floor((Math.Floor((specialAttackStat * 2 + 31) * pokemon.Level / 100.0) + 5) * 1.1);
+		int statMultiplier = 1;
+		if (statChangeAttackIds.Contains(attack.Id)) // 방깎 기술
+		{
+			statMultiplier = 4;
+		}
+
 		double damageCalc;
 
 		if (attack.DamageClassId == 2)
 		{
-			damageCalc = Math.Floor(Math.Floor((((2 * pokemon.Level / 5) + 2) * attack.Power.Value * actualAttack / 172.0 / 50) + 2) * 1.5);
+			damageCalc = Math.Floor(Math.Floor((((2 * pokemon.Level / 5) + 2) * attack.Power.Value * actualAttack * statMultiplier / 172.0 / 50) + 2) * 1.5);
 		}
 		else if (attack.DamageClassId == 3)
 		{
@@ -1802,10 +1889,7 @@
 			damageCalc = 0;
 		}
 
-		if(defenseIds.Contains(attack.Id)) // 방깎 기술
-		{
-			damageCalc = Math.Floor (damageCalc * 4);
-		}
+
 
 		if (attack.TypeId == 5 || attack.TypeId == 9 || attack.TypeId == 12 || attack.TypeId == 13 || attack.TypeId == 15)
 		{
@@ -1825,7 +1909,7 @@
 			damageCalc += 17;
 		}
 
-
+		GetAttackDamageCount++;
 		return (int)(damageCalc);
 	}
 
