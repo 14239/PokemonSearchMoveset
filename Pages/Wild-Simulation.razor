@@ -704,14 +704,14 @@
 			{
 				Id = 0,
 				Type = NodeType.Start,
-				Title = "데미지 100 이상 기술 제거",
+				Title = "시작",
 				X = 8000,
 				Y = 4000,
 				SelectMoveLogic = pokemon =>
 				{
 					// 조건에 맞는 기술들을 선택하여 리스트로 반환
 					return pokemon.PossibleMoves
-						.Where(moveId => moveId != -1 && pokemon.MoveDamages.TryGetValue(moveId, out int damage) && damage < 100)
+						.Where(moveId => moveId != -1)
 						.ToList();
 				}
 			};
@@ -949,7 +949,7 @@
 			{
 				Id = 18,
 				Type = NodeType.Decision,
-				Title = "스탯 6랭크 깎여도 버틸 수 있음?",
+				Title = $"6랭크 깎여도 {arbolivaHealPerTurn}뎀 미만?",
 				X = 150,
 				Y = 100,
 			};
@@ -961,7 +961,7 @@
 			{
 				Id = 19,
 				Type = NodeType.Action,
-				Title = "이 기술 앙코르로 고정",
+				Title = "앙코르로 고정",
 				X = 0,
 				Y = 300,
 
@@ -1004,7 +1004,7 @@
 			{
 				Id = 21,
 				Type = NodeType.Decision,
-				Title = "반동기 있음?",
+				Title = $"{arbolivaHealPerTurn}뎀 미만 반동기 있음?",
 				X = -300,
 				Y = 100,
 			};
@@ -1048,7 +1048,7 @@
 			{
 				Id = 24,
 				Type = NodeType.Decision,
-				Title = "난동기 있음?",
+				Title = $"{arbolivaHealPerTurn}뎀 미만 난동기 있음?",
 				X = 150,
 				Y = 100,
 			};
@@ -1103,7 +1103,7 @@
 			{
 				Id = 28,
 				Type = NodeType.Decision,
-				Title = "우선도 높은 기술 있음?",
+				Title = $"{arbolivaHealPerTurn}뎀 미만 선공기 있음?",
 				X = -300,
 				Y = 100,
 			};
@@ -1136,7 +1136,7 @@
 			{
 				Id = 30,
 				Type = NodeType.Decision,
-				Title = "상태이상 기술 있음?",
+				Title = $"{arbolivaHealPerTurn}뎀 미만 상태이상기 있음?",
 				X = 150,
 				Y = 300,
 			};
@@ -1522,8 +1522,8 @@
 		decision3.Children.Add(new Child(decision3_1, (pokemon) => CheckMoves(pokemon, giftIds), "Yes"));
 		decision3.Children.Add(new Child(decision4, (pokemon) => !CheckMoves(pokemon, giftIds), "No"));
 
-		decision3_1.Children.Add(new Child(decision3_1_yes1, (pokemon) => Check4StatusMoves(pokemon), "Yes"));
-		decision3_1.Children.Add(new Child(decision3_2, (pokemon) => !Check4StatusMoves(pokemon), "No"));
+		decision3_1.Children.Add(new Child(decision3_1_yes1, (pokemon) => Check4StatusMoves(pokemon), "No"));
+		decision3_1.Children.Add(new Child(decision3_2, (pokemon) => !Check4StatusMoves(pokemon), "Yes"));
 		decision3_1_yes1.Children.Add(new Child(decision3_1_yes2, null, "골덕 교체"));
 
 
@@ -1535,8 +1535,8 @@
 		decision4.Children.Add(new Child(decision_priority, (pokemon) => CheckAllMoves(pokemon, allDangerMoveIds), "Yes"));
 		decision4.Children.Add(new Child(decision4_no1, (pokemon) => !CheckAllMoves(pokemon, allDangerMoveIds), "No"));
 
-		decision_priority.Children.Add(new Child(decision_defense, (pokemon) => !CheckMoves(pokemon, priorityIds), "No"));
-		decision_priority.Children.Add(new Child(decision_priority_yes1, (pokemon) => CheckMoves(pokemon, priorityIds), "Yes"));
+		decision_priority.Children.Add(new Child(decision_defense, (pokemon) => !CheckMovesWithDamage(pokemon, priorityIds), "No"));
+		decision_priority.Children.Add(new Child(decision_priority_yes1, (pokemon) => CheckMovesWithDamage(pokemon, priorityIds), "Yes"));
 
 
 		decision_defense.Children.Add(new Child(decision_defense_yes1, (pokemon) => CheckMoves(pokemon, statChangeAttackIds), "Yes"));
@@ -1544,32 +1544,32 @@
 		decision_defense_yes1.Children.Add(new Child(
 			decision_defense_yes2,
 			pokemon => pokemon.PossibleMoves.Any(moveId =>
-				statChangeAttackIds.Contains(moveId) && pokemon.MoveDamages.ContainsKey(moveId) && pokemon.MoveDamages[moveId] < 74),
+				statChangeAttackIds.Contains(moveId) && pokemon.MoveDamages.ContainsKey(moveId) && pokemon.MoveDamages[moveId] < arbolivaHealPerTurn),
 			"Yes"));
 
 		decision_defense_yes1.Children.Add(new Child(
 			decision_abilSwapEarly,
 			pokemon => !pokemon.PossibleMoves.Any(moveId =>
-				statChangeAttackIds.Contains(moveId) && pokemon.MoveDamages.ContainsKey(moveId) && pokemon.MoveDamages[moveId] < 74),
+				statChangeAttackIds.Contains(moveId) && pokemon.MoveDamages.ContainsKey(moveId) && pokemon.MoveDamages[moveId] < arbolivaHealPerTurn),
 			"No"));
 
 		decision_abilSwapEarly.Children.Add(new Child(decision_recoil, (pokemon) => !CheckAbilities(pokemon, cantChangeIds), "Yes"));
 		decision_abilSwapEarly.Children.Add(new Child(decision_burn, (pokemon) => CheckAbilities(pokemon, cantChangeIds), "No"));
 
 
-		decision_recoil.Children.Add(new Child(decision_thrash, (pokemon) => !CheckMoves(pokemon, recoilIds), "No"));
-		decision_recoil.Children.Add(new Child(decision_recoil_yes1, (pokemon) => CheckMoves(pokemon, recoilIds), "Yes"));
+		decision_recoil.Children.Add(new Child(decision_thrash, (pokemon) => !CheckMovesWithDamage(pokemon, recoilIds), "No"));
+		decision_recoil.Children.Add(new Child(decision_recoil_yes1, (pokemon) => CheckMovesWithDamage(pokemon, recoilIds), "Yes"));
 		decision_recoil_yes1.Children.Add(new Child(decision_recoil_yes2, null, null));
 
-		decision_thrash.Children.Add(new Child(decision_burn, (pokemon) => !CheckMoves(pokemon, thrashIds), "No"));
-		decision_thrash.Children.Add(new Child(decision_thrash_yes1, (pokemon) => CheckMoves(pokemon, thrashIds), "Yes"));
+		decision_thrash.Children.Add(new Child(decision_burn, (pokemon) => !CheckMovesWithDamage(pokemon, thrashIds), "No"));
+		decision_thrash.Children.Add(new Child(decision_thrash_yes1, (pokemon) => CheckMovesWithDamage(pokemon, thrashIds), "Yes"));
 		decision_thrash_yes1.Children.Add(new Child(decision_thrash_yes2, null, null));
 
 		decision_recoil_yes2.Children.Add(new Child(decision_thrash_yes3, null, null));
 		decision_thrash_yes2.Children.Add(new Child(decision_thrash_yes3, null, "골덕 교체"));
 
-		decision_burn.Children.Add(new Child(decision_burn_yes1, (pokemon) => CheckMoves(pokemon, burnIds), "Yes"));
-		decision_burn.Children.Add(new Child(decision_speed, (pokemon) => !CheckMoves(pokemon, burnIds), "No"));
+		decision_burn.Children.Add(new Child(decision_burn_yes1, (pokemon) => CheckMovesWithDamage(pokemon, burnIds), "Yes"));
+		decision_burn.Children.Add(new Child(decision_speed, (pokemon) => !CheckMovesWithDamage(pokemon, burnIds), "No"));
 		decision_burn_yes1.Children.Add(new Child(decision_burn_yes2, null, null));
 
 		decision_speed.Children.Add(new Child(decision_speed_yes1, (pokemon) => CheckMoves(pokemon, speedIds), "Yes"));
@@ -1639,6 +1639,24 @@
 		if (ids == null || ids.Count == 0) return false;
 		return pokemon.PossibleMoves.Any(move => ids.Contains(move));
 	}
+
+	public bool CheckMovesWithDamage(WildPokemon pokemon, List<int> ids)
+	{
+		if (ids == null || ids.Count == 0) return false;
+		foreach (var moveId in pokemon.PossibleMoves)
+		{
+			if (ids.Contains(moveId)) // ids에 없는 경우, 데미지 계산
+			{
+				// 내던지기 그래스필드 광합성 쾌청 광합성
+				// 147 = 올리르바 광합성 회복량 1/3(84) + 그래스필드 회복량(21) 초과의 피해
+				// 딕셔너리에서 데미지 확인
+				if (!pokemon.MoveDamages.TryGetValue(moveId, out int damage) || damage < arbolivaHealPerTurn)
+					return true; 
+			}
+		}
+		return false;
+	}
+
 	// 위험 기술 있는지 파악
 	public bool CheckAllMoves(WildPokemon pokemon, List<int> ids)
 	{
@@ -1646,11 +1664,10 @@
 
 		foreach (var moveId in pokemon.PossibleMoves)
 		{
-			if (moveId == -1) continue; // -1 제외
 			if (!ids.Contains(moveId)) // ids에 없는 경우, 데미지 계산
 			{
 				// 딕셔너리에서 데미지 확인
-				if (!pokemon.MoveDamages.TryGetValue(moveId, out int damage) || damage < 74)
+				if (!pokemon.MoveDamages.TryGetValue(moveId, out int damage) || damage < arbolivaHealPerTurn)
 					return false; // 74 이상의 피해를 주지 않는 경우
 			}
 		}
@@ -1685,8 +1702,8 @@
 				if (move != null && move.DamageClassId != 1)
 				{
 					// 딕셔너리에서 데미지 확인
-					if (!pokemon.MoveDamages.TryGetValue(moveId, out int damage) || damage < 74)
-						return false; // 74 이상의 피해를 주지 않는 경우
+					if (!pokemon.MoveDamages.TryGetValue(moveId, out int damage) || damage < arbolivaHealPerTurn)
+						return false; // 147 이상의 피해를 주지 않는 경우
 				}
 			}
 		}
@@ -1711,6 +1728,7 @@
 	{
 		pokemon.NodeList = new List<FlowNode>();
 		CalculateMoveDamages(pokemon);
+		pokemon.FlingSurvivalOutcome = IsSurviveFling(pokemon);
 
 		// 하이라이트 초기화
 		foreach (FlowNode node in allNodes)
@@ -1730,7 +1748,6 @@
 			GenerateSimulation(startNode, pokemon);
 		}
 		// 마무리
-		pokemon.FlingSurvivalOutcome = IsSurviveFling(pokemon);
 		if (pokemon.PossibleMoves.Count != 0)
 		{
 			pokemon.ArbolivaDamage = pokemon.MoveDamages[pokemon.PossibleMoves[0]];	
@@ -1825,7 +1842,7 @@
 			}
 		}
 		// 내던지기 피해량 계산
-		double flingDamageCalc = Math.Floor((((2 * 79 / 5) + 2) * 10 * 103 / Math.Floor((double)actualDefense / statMultiplier) / 50) + 2) * 1.5;
+		double flingDamageCalc = Math.Floor((((2 * 94 / 5) + 2) * 10 * 122 / Math.Floor((double)actualDefense / statMultiplier) / 50) + 2) * 1.5;
 
 		int flingDamage = (int)Math.Floor(flingDamageCalc);
 		int burnedFlingDamage = (int)Math.Floor(flingDamageCalc / 2);
@@ -1849,6 +1866,7 @@
 	}
 
 	public int GetAttackDamageCount = 0;
+	public int arbolivaHealPerTurn = 105;
 
 	public int GetAttackDamage(WildPokemon pokemon, int moveId)
 	{
@@ -1858,8 +1876,8 @@
 		// 종족값 계산
 		int attackStat = dataService.PokemonStats.FirstOrDefault(stat => stat.PokemonId == pokemon.Id && stat.StatId == 2)?.BaseStat ?? 0;
 		int specialAttackStat = dataService.PokemonStats.FirstOrDefault(stat => stat.PokemonId == pokemon.Id && stat.StatId == 4)?.BaseStat ?? 0;
-
-		// 올리르바 레벨은 79, HP는 286, 방어는 172, 특수방어는 201
+		// 올리르바 레벨 94 : HP 339, 공격122(개체값2), 방어204, 특방 239 
+		// 올리르바 레벨은 79, HP 286, 공격103(개체값2), 방어172, 특방 201
 
 		if (!attack.Power.HasValue)
 		{
@@ -1878,11 +1896,11 @@
 
 		if (attack.DamageClassId == 2)
 		{
-			damageCalc = Math.Floor(Math.Floor((((2 * pokemon.Level / 5) + 2) * attack.Power.Value * actualAttack * statMultiplier / 172.0 / 50) + 2) * 1.5);
+			damageCalc = Math.Round(Math.Floor((((2 * pokemon.Level / 5) + 2) * attack.Power.Value * actualAttack * statMultiplier / 204.0 / 50) + 2) * 1.5);
 		}
 		else if (attack.DamageClassId == 3)
 		{
-			damageCalc = Math.Floor(Math.Floor((((2 * pokemon.Level / 5) + 2) * attack.Power.Value * actualSpecialAttack / 201.0 / 50) + 2) * 1.5);
+			damageCalc = Math.Round(Math.Floor((((2 * pokemon.Level / 5) + 2) * attack.Power.Value * actualSpecialAttack / 239.0 / 50) + 2) * 1.5);
 		}
 		else
 		{
@@ -1893,11 +1911,11 @@
 
 		if (attack.TypeId == 5 || attack.TypeId == 9 || attack.TypeId == 12 || attack.TypeId == 13 || attack.TypeId == 15)
 		{
-			damageCalc = Math.Floor(damageCalc / 2);
+			damageCalc = Math.Round(damageCalc / 2);
 		}
 		else if (attack.TypeId == 11)
 		{
-			damageCalc = Math.Floor( damageCalc / 4);
+			damageCalc = Math.Round( damageCalc / 4 * 1.5);
 		}
 		else if (attack.TypeId == 8)
 		{
