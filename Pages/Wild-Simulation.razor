@@ -608,9 +608,11 @@
 	NodePokemon Pokemon4 = new NodePokemon("픽시", "#D685AD");
 	NodePokemon Pokemon5 = new NodePokemon("드레디어", "#7AC74C");
 	NodePokemon Pokemon6 = new NodePokemon("둥실라이드", "#8E73C5");
-	NodePokemon Pokemon7 = new NodePokemon("깜까미", "#72576F");
-	NodePokemon Pokemon8 = new NodePokemon("루차불", "#C22E28");
+	NodePokemon Pokemon7 = new NodePokemon("태깅구르", "#A33EA1");
+	NodePokemon Pokemon8 = new NodePokemon("깜까미", "#72576F");
+
 	NodePokemon Pokemon9 = new NodePokemon("날개치는머리", "#A56EA2");
+	NodePokemon Pokemon10 = new NodePokemon("루차불", "#C22E28");
 
 
 	// 멤버 변수 선언
@@ -858,7 +860,7 @@
 				Id = 13,
 				Type = NodeType.Action,
 				Title = "루차불 도발",
-				UsedPokemon = Pokemon8,
+				UsedPokemon = Pokemon10,
 				X = -150,
 				Y = 100,
 				SelectMoveLogic = pokemon =>
@@ -1190,9 +1192,10 @@
 			{
 				Id = 34,
 				Type = NodeType.Action,
-				Title = "앙코르(플랜B고정)",
+				Title = "깜까미 앙코르",
 				X = 150,
 				Y = 100,
+				UsedPokemon = Pokemon8,
 				SelectMoveLogic = pokemon =>
 				{
 					var validMoves = pokemon.PossibleMoves
@@ -1287,7 +1290,7 @@
 			{
 				Id = 42,
 				Type = NodeType.Action,
-				Title = "깜까미 구애안경 트릭",
+				Title = "태깅구르 트릭",
 				UsedPokemon = Pokemon7,
 				X = -150,
 				Y = 100,
@@ -1298,7 +1301,7 @@
 			{
 				Id = 43,
 				Type = NodeType.Action,
-				Title = "깜까미 앙코르",
+				Title = "태깅구르 겁나는얼굴",
 				UsedPokemon = Pokemon7,
 				X = -0,
 				Y = 100,
@@ -1331,8 +1334,8 @@
 			{
 				Id = 46,
 				Type = NodeType.Action,
-				Title = "픽시 앙코르 트릭",
-				UsedPokemon = Pokemon4,
+				Title = "깜까미 앙코르 트릭",
+				UsedPokemon = Pokemon8,
 				X = 0,
 				Y = 100,
 			};
@@ -1342,7 +1345,7 @@
 			{
 				Id = 47,
 				Type = NodeType.Decision,
-				Title = "고정된 기술 불타입?",
+				Title = "격투/비행/독/벌레/불꽃/얼음?",
 				X = 0,
 				Y = 100,
 			};
@@ -1449,7 +1452,7 @@
 			{
 				Id = 57,
 				Type = NodeType.Action,
-				Title = "깜까미 구애안경 트릭",
+				Title = "태깅구르 트릭",
 				UsedPokemon = Pokemon7,
 				X = -150,
 				Y = 100,
@@ -1471,7 +1474,7 @@
 			{
 				Id = 59,
 				Type = NodeType.Decision,
-				Title = "고정된 기술 불타입?",
+				Title = "격투/비행/독/벌레/불꽃/얼음?",
 				X = 0,
 				Y = 100,
 			};
@@ -1607,8 +1610,8 @@
 
 		actionA_skillSwap.Children.Add(new Child(actionA_leppa, null, null));
 		actionA_leppa.Children.Add(new Child(actionA_tera, null, null));
-		actionA_tera.Children.Add(new Child(actionA_end, null, "No"));
-		actionA_tera.Children.Add(new Child(actionA_tera_yes1, null, "Yes"));
+		actionA_tera.Children.Add(new Child(actionA_end, (pokemon) => !CheckMoveType(pokemon), "No"));
+		actionA_tera.Children.Add(new Child(actionA_tera_yes1, (pokemon) => CheckMoveType(pokemon), "Yes"));
 		actionA_tera_yes1.Children.Add(new Child(actionA_end, null, null));
 
 
@@ -1619,7 +1622,7 @@
 		decision_flingSurvive.Children.Add(new Child(actionB_impossible, (pokemon) => pokemon.FlingSurvivalOutcome == SurvivalOutcome.CannotSurvive, "No"));
 		actionB_burn.Children.Add(new Child(actionB_decision_ability, null, null));
 		actionB_decision_ability.Children.Add(new Child(actionB_skillSwap, (pokemon) => CheckAbilities(pokemon, dangerAbilIds) && !(pokemon.NodeList.Contains(decision_thrash_yes2) || pokemon.NodeList.Contains(decision_recoil_yes2) || pokemon.NodeList.Contains(decision2_1_yes2)), "Yes"));
-		actionB_decision_ability.Children.Add(new Child(actionB_soak, (pokemon) => !CheckAbilities(pokemon, dangerAbilIds) && !(pokemon.NodeList.Contains(decision_thrash_yes2) || pokemon.NodeList.Contains(decision_recoil_yes2) || pokemon.NodeList.Contains(decision2_1_yes2)), "No"));
+		actionB_decision_ability.Children.Add(new Child(actionB_soak, (pokemon) => !(CheckAbilities(pokemon, dangerAbilIds) && !(pokemon.NodeList.Contains(decision_thrash_yes2) || pokemon.NodeList.Contains(decision_recoil_yes2) || pokemon.NodeList.Contains(decision2_1_yes2))), "No"));
 		actionB_skillSwap.Children.Add(new Child(actionB_soak, null, null));
 
 		actionB_soak.Children.Add(new Child(actionB_decision_faster, null, null));
@@ -1629,8 +1632,8 @@
 		actionB_decision_faster.Children.Add(new Child(actionB_decision_faster_no1, (pokemon) => !(priorityIds.Contains(pokemon.PossibleMoves[0]) || speedIds.Contains(pokemon.PossibleMoves[0])), "No"));
 		actionB_decision_faster_no1.Children.Add(new Child(actionB_tera, null, null));
 
-		actionB_tera.Children.Add(new Child(actionB_end, null, "No"));
-		actionB_tera.Children.Add(new Child(actionB_tera_yes1, null, "Yes"));
+		actionB_tera.Children.Add(new Child(actionB_end, (pokemon) => !CheckMoveType(pokemon), "No"));
+		actionB_tera.Children.Add(new Child(actionB_tera_yes1, (pokemon) => CheckMoveType(pokemon), "Yes"));
 		actionB_tera_yes1.Children.Add(new Child(actionB_end, null, null));
 
 	}
@@ -1675,7 +1678,22 @@
 		return true; // 모든 조건을 만족하는 경우
 	}
 
-
+	public bool CheckMoveType(WildPokemon pokemon)
+	{
+		if(pokemon.PossibleMoves == null)
+		{
+			return false;
+		}
+		else
+		{
+			var move = AllMoves.FirstOrDefault(m => m.Id == pokemon.PossibleMoves[0]);
+			if (move != null && move.DamageClassId != 1 && (move.TypeId == 2 || move.TypeId == 3 || move.TypeId == 4 || move.TypeId == 7 || move.TypeId == 10 || move.TypeId == 15))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
 
 
 
