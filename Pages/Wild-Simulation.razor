@@ -622,6 +622,7 @@
 	// 기술
 	private List<int> allDangerMoveIds;
 	private List<int> ghostIds; // 목숨걸기, 교체불가 기술
+	private List<int> trapIds; // 목숨걸기, 교체불가 기술
 	private List<int> explosionIds;
 	private List<int> giftIds;
 	private List<int> atkUpAttackIds;
@@ -652,10 +653,12 @@
 		DangerousAbilities = await MoveInfoService.LoadDangerousAbilitiesAsync();
 
 		// Filter the MoveId based on Tier or TierName
-		allDangerMoveIds = DangerousMoves.Select(m => m.MoveId)
-						.ToList();
+		
 
 		ghostIds = DangerousMoves.Where(m => m.Category == "교체불가기술" || m.Category == "목숨걸기")
+								.Select(m => m.MoveId)
+								.ToList();
+		trapIds = DangerousMoves.Where(m => m.Category == "교체불가기술")
 								.Select(m => m.MoveId)
 								.ToList();
 		explosionIds = DangerousMoves.Where(m => m.TierName == "사용 절대금지" && m.Category == "폭발기술")
@@ -697,7 +700,9 @@
 					.Select(move => move.Id)
 					.ToList();
 
-
+		allDangerMoveIds = DangerousMoves.Select(m => m.MoveId)
+						.ToList();
+		allDangerMoveIds.AddRange(pp5Ids);
 
 		gasIds = DangerousAbilities.Where(a => a.AbilityName == "화학변화가스")
 								.Select(a => a.AbilityId)
@@ -729,7 +734,6 @@
 					// 조건에 맞는 기술들을 선택하여 리스트로 반환
 					return pokemon.PossibleMoves
 						.Where(moveId => moveId != -1)
-						.Where(moveId => !AllMoves.Any(move => move.Id == moveId &&  move.Pp < 10))
 						.ToList();
 				}
 			};
@@ -825,7 +829,7 @@
 				Id = 9,
 				Type = NodeType.Decision,
 				Title = "도발 써도 됨?",
-				X = 450,
+				X = -150,
 				Y = 100,
 			};
 		allNodes.Add(decision3_1);
@@ -907,7 +911,7 @@
 				Id = 14,
 				Type = NodeType.Decision,
 				Title = "전부 위험기술?",
-				X = 0,
+				X = 600,
 				Y = 400,
 			};
 		allNodes.Add(decision4);
@@ -917,7 +921,7 @@
 				Id = 15,
 				Type = NodeType.Action,
 				Title = "안전한 기술 앙코르",
-				X = 750,
+				X = 300,
 				Y = 200,
 				SelectMoveLogic = pokemon =>
 				{
@@ -938,6 +942,33 @@
 		allNodes.Add(decision4_no1);
 
 
+		var decision_priority = new FlowNode
+			{
+				Id = 27,
+				Type = NodeType.Decision,
+				Title = $"{arbolivaHealPerTurn}뎀 미만 선공기 있음?",
+				X = -150,
+				Y = 100,
+			};
+		allNodes.Add(decision_priority);
+
+		var decision_priority_yes1 = new FlowNode
+			{
+				Id = 28,
+				Type = NodeType.Action,
+				Title = "선공기 쓴 턴에 앙코르",
+				X = 300,
+				Y = 100,
+				SelectMoveLogic = pokemon =>
+				{
+					var validMoves = pokemon.PossibleMoves
+						.Where(moveId => priorityIds.Contains(moveId))
+						.ToList();
+
+					// 조건에 맞는 기술들을 선택하여 리스트로 반환
+					return validMoves;
+				}
+			};
 
 
 
@@ -947,7 +978,7 @@
 				Id = 16,
 				Type = NodeType.Decision,
 				Title = "방/특방 감소 기술 있음?",
-				X = 300,
+				X = -150,
 				Y = 100,
 			};
 		allNodes.Add(decision_defense);
@@ -975,15 +1006,11 @@
 				SelectMoveLogic = pokemon =>
 				{
 					var validMoves = pokemon.PossibleMoves
-						.Where(moveId => moveId != -1 && statChangeAttackIds.Contains(moveId))
+						.Where(moveId => statChangeAttackIds.Contains(moveId))
 						.ToList();
 
 					// 조건에 맞는 기술들을 선택하여 리스트로 반환
-					return validMoves
-						.Select(moveId => AllMoves.FirstOrDefault(move => move.Id == moveId))
-						.Where(move => move != null &&  move.Power.HasValue)
-						.Select(move => move.Id)
-						.ToList();
+					return validMoves;
 				}
 			};
 		allNodes.Add(decision_defense_yes2);
@@ -999,7 +1026,7 @@
 				SelectMoveLogic = pokemon =>
 				{
 					var validMoves = pokemon.PossibleMoves
-					.Where(moveId => moveId != -1 && !statChangeAttackIds.Contains(moveId))
+					.Where(moveId => !statChangeAttackIds.Contains(moveId))
 					.ToList();
 
 				return validMoves;
@@ -1027,15 +1054,11 @@
 				SelectMoveLogic = pokemon =>
 				{
 					var validMoves = pokemon.PossibleMoves
-						.Where(moveId => moveId != -1 && recoilIds.Contains(moveId))
+						.Where(moveId => recoilIds.Contains(moveId))
 						.ToList();
 
 					// 조건에 맞는 기술들을 선택하여 리스트로 반환
-					return validMoves
-						.Select(moveId => AllMoves.FirstOrDefault(move => move.Id == moveId))
-						.Where(move => move != null && move.Power.HasValue)
-						.Select(move => move.Id)
-						.ToList();
+					return validMoves;
 				}
 			};
 		allNodes.Add(decision_recoil_yes1);
@@ -1071,15 +1094,11 @@
 				SelectMoveLogic = pokemon =>
 				{
 					var validMoves = pokemon.PossibleMoves
-						.Where(moveId => moveId != -1 && thrashIds.Contains(moveId))
+						.Where(moveId => thrashIds.Contains(moveId))
 						.ToList();
 
 					// 조건에 맞는 기술들을 선택하여 리스트로 반환
-					return validMoves
-						.Select(moveId => AllMoves.FirstOrDefault(move => move.Id == moveId))
-						.Where(move => move != null && move.Power.HasValue)
-						.Select(move => move.Id)
-						.ToList();
+					return validMoves;
 				}
 			};
 		allNodes.Add(decision_thrash_yes1);
@@ -1106,37 +1125,6 @@
 			};
 		allNodes.Add(decision_thrash_yes3);
 
-		var decision_priority = new FlowNode
-			{
-				Id = 27,
-				Type = NodeType.Decision,
-				Title = $"{arbolivaHealPerTurn}뎀 미만 선공기 있음?",
-				X = -150,
-				Y = 100,
-			};
-		allNodes.Add(decision_priority);
-
-		var decision_priority_yes1 = new FlowNode
-			{
-				Id = 28,
-				Type = NodeType.Action,
-				Title = "선공기 쓴 턴에 앙코르",
-				X = -150,
-				Y = 100,
-				SelectMoveLogic = pokemon =>
-				{
-					var validMoves = pokemon.PossibleMoves
-						.Where(moveId => moveId != -1 && priorityIds.Contains(moveId))
-						.ToList();
-
-					// 조건에 맞는 기술들을 선택하여 리스트로 반환
-					return validMoves
-						.Select(moveId => AllMoves.FirstOrDefault(move => move.Id == moveId))
-						.Where(move => move != null && move.Power.HasValue)
-						.Select(move => move.Id)
-						.ToList();
-				}
-			};
 		allNodes.Add(decision_priority_yes1);
 
 		var decision_burn = new FlowNode
@@ -1155,7 +1143,7 @@
 				Type = NodeType.Action,
 				Title = "올리르바 화상 걸어두기",
 				UsedPokemon = Pokemon1,
-				X = 150,
+				X = 225,
 				Y = 100,
 			};
 		allNodes.Add(decision_burn_yes1);
@@ -1170,15 +1158,11 @@
 				SelectMoveLogic = pokemon =>
 				{
 					var validMoves = pokemon.PossibleMoves
-						.Where(moveId => moveId != -1 && burnIds.Contains(moveId))
+						.Where(moveId => burnIds.Contains(moveId))
 						.ToList();
 
 					// 조건에 맞는 기술들을 선택하여 리스트로 반환
-					return validMoves
-						.Select(moveId => AllMoves.FirstOrDefault(move => move.Id == moveId))
-						.Where(move => move != null && move.Power.HasValue)
-						.Select(move => move.Id)
-						.ToList();
+					return validMoves;
 				}
 			};
 		allNodes.Add(decision_burn_yes2);
@@ -1204,26 +1188,52 @@
 				SelectMoveLogic = pokemon =>
 				{
 					var validMoves = pokemon.PossibleMoves
-						.Where(moveId => moveId != -1 && speedIds.Contains(moveId))
+						.Where(moveId => speedIds.Contains(moveId))
 						.ToList();
 
 					// 조건에 맞는 기술들을 선택하여 리스트로 반환
-					return validMoves
-						.Select(moveId => AllMoves.FirstOrDefault(move => move.Id == moveId))
-						.Where(move => move != null && move.Power.HasValue)
-						.Select(move => move.Id)
-						.ToList();
+					return validMoves;
 				}
 			};
 		allNodes.Add(decision_speed_yes1);
+
+		var decision_trap = new FlowNode
+			{
+				Id = 67,
+				Type = NodeType.Decision,
+				Title = $"{arbolivaHealPerTurn}뎀 미만 교체불가기 있음?",
+				X = 150,
+				Y = 100,
+			};
+		allNodes.Add(decision_trap);
+
+		var decision_trap_yes1 = new FlowNode
+			{
+				Id = 68,
+				Type = NodeType.Action,
+				Title = $"교체불가기 고정",
+				X = 150,
+				Y = 100,
+				SelectMoveLogic = pokemon =>
+				{
+					var validMoves = pokemon.PossibleMoves
+						.Where(moveId => trapIds.Contains(moveId))
+						.ToList();
+
+					Console.WriteLine(pokemon.Name + ", " + pokemon.Level	);
+					// 조건에 맞는 기술들을 선택하여 리스트로 반환
+					return validMoves;
+				}
+			};
+		allNodes.Add(decision_trap_yes1);
 
 		var decision_pp5 = new FlowNode
 			{
 				Id = 34,
 				Type = NodeType.Decision,
 				Title = $"{arbolivaHealPerTurn}뎀 미만 PP 5 기술 있음?",
-				X = 0,
-				Y = 200,
+				X = -150,
+				Y = 100,
 			};
 		allNodes.Add(decision_pp5);
 
@@ -1233,9 +1243,21 @@
 				Type = NodeType.Action,
 				Title = $"PP 5 기술 고정",
 				X = 150,
-				Y = 100,
+				Y = 200,
+				SelectMoveLogic = pokemon =>
+				{
+					var validMoves = pokemon.PossibleMoves
+						.Where(moveId => pp5Ids.Contains(moveId))
+						.ToList();
+
+					// 조건에 맞는 기술들을 선택하여 리스트로 반환
+					return validMoves;
+				}
 			};
 		allNodes.Add(decision_pp5_yes1);
+
+
+
 
 		var action_unplayable = new FlowNode
 			{
@@ -1253,7 +1275,7 @@
 				Type = NodeType.Decision,
 				Title = "특성 교체 가능?",
 				X = -300,
-				Y = 100,
+				Y = 300,
 			};
 		allNodes.Add(decision_abilSwap);
 
@@ -1276,7 +1298,7 @@
 				Type = NodeType.Action,
 				Title = "반드시 플랜 A 필요",
 				X = 150,
-				Y = 300,
+				Y = 100,
 			};
 		allNodes.Add(actionA_start);
 
@@ -1426,7 +1448,7 @@
 				Type = NodeType.Action,
 				Title = "반드시 플랜 B 필요",
 				X = -0,
-				Y = 1200,
+				Y = 1100,
 			};
 		allNodes.Add(actionB_start);
 
@@ -1436,7 +1458,7 @@
 				Type = NodeType.Decision,
 				Title = "올리르바 내던지기 버팀?",
 				X = -0,
-				Y = 300,
+				Y = 100,
 				IsLong = true,
 			};
 		allNodes.Add(actionB_flingSurvive);
@@ -1460,7 +1482,7 @@
 				Type = NodeType.Decision,
 				Title = "올리르바 내던지기 버팀?",
 				X = -0,
-				Y = 800,
+				Y = 1000,
 				IsLong = true,
 			};
 		allNodes.Add(decision_flingSurvive);
@@ -1481,8 +1503,8 @@
 				Id = 58,
 				Type = NodeType.Decision,
 				Title = "위험한 특성?",
-				X = 1200,
-				Y = 1500,
+				X = 600,
+				Y = 1900,
 				IsLong = true,
 			};
 		allNodes.Add(actionB_decision_ability);
@@ -1647,21 +1669,25 @@
 		decision_burn_yes1.Children.Add(new Child(decision_burn_yes2, null, null));
 
 		decision_speed.Children.Add(new Child(decision_speed_yes1, (pokemon) => CheckMoves(pokemon, speedIds), "Yes"));
-		decision_speed.Children.Add(new Child(decision_pp5, (pokemon) => !CheckMoves(pokemon, speedIds), "No"));
+		decision_speed.Children.Add(new Child(decision_trap, (pokemon) => !CheckMoves(pokemon, speedIds), "No"));
 
+		decision_trap.Children.Add(new Child(decision_trap_yes1, (pokemon) => CheckMovesWithDamage(pokemon, trapIds), "Yes"));
+		decision_trap.Children.Add(new Child(decision_pp5, (pokemon) => !CheckMovesWithDamage(pokemon, trapIds), "No"));
 
-		decision_pp5.Children.Add(new Child(decision_pp5_yes1, (pokemon) => CheckMoves(pokemon, pp5Ids), "Yes"));
+		decision_pp5.Children.Add(new Child(decision_pp5_yes1, (pokemon) => CheckMovesWithDamage(pokemon, pp5Ids), "Yes"));
 		decision_pp5_yes1.Children.Add(new Child(actionA_start, null, null));
-		decision_pp5.Children.Add(new Child(action_unplayable, (pokemon) => !CheckMoves(pokemon, pp5Ids), "No"));
+		decision_pp5.Children.Add(new Child(action_unplayable, (pokemon) => !CheckMovesWithDamage(pokemon, pp5Ids), "No"));
+		
 
 
 		//특성 바꿀 수 있는지로 다 모으기
 		decision4_no1.Children.Add(new Child(decision_flingSurvive, null, null));
 		decision_defense_yes2.Children.Add(new Child(decision_flingSurvive, null, null));
 		decision_burn_yes2.Children.Add(new Child(decision_flingSurvive, null, null));
+		decision_priority_yes1.Children.Add(new Child(decision_flingSurvive, null, null));
+		decision_trap_yes1.Children.Add(new Child(decision_flingSurvive, null, null));
 
 		// 반드시 플랜B
-		decision_priority_yes1.Children.Add(new Child(actionB_start, null, null));
 		decision_speed_yes1.Children.Add(new Child(actionB_start, null, null));
 		decision_thrash_yes3.Children.Add(new Child(actionB_start, null, null));
 		decision2_1_yes2.Children.Add(new Child(actionB_start, null, null));
@@ -1685,9 +1711,9 @@
 		actionA_decision_skillSwap.Children.Add(new Child(actionA_decision_faster, (pokemon) => !CheckAbilities(pokemon, skillSwapIds), "Yes"));
 		actionA_decision_skillSwap.Children.Add(new Child(actionA_decision_skillSwap_no1, (pokemon) => CheckAbilities(pokemon, skillSwapIds), "No"));
 		actionA_decision_skillSwap_no1.Children.Add(new Child(actionA_decision_faster, null, null));
-		actionA_decision_faster.Children.Add(new Child(actionA_decision_faster_yes1, (pokemon) => (priorityIds.Contains(pokemon.PossibleMoves[0]) || speedIds.Contains(pokemon.PossibleMoves[0])), "Yes"));
+		actionA_decision_faster.Children.Add(new Child(actionA_decision_faster_yes1, (pokemon) => (CheckMoves(pokemon, speedIds) || CheckMoves(pokemon, priorityIds)), "Yes"));
 		actionA_decision_faster_yes1.Children.Add(new Child(actionA_decision_faster_yes2, null, null));
-		actionA_decision_faster.Children.Add(new Child(actionA_decision_faster_no1, (pokemon) => !(priorityIds.Contains(pokemon.PossibleMoves[0]) || speedIds.Contains(pokemon.PossibleMoves[0])), "No"));
+		actionA_decision_faster.Children.Add(new Child(actionA_decision_faster_no1, (pokemon) => !(CheckMoves(pokemon, speedIds) || CheckMoves(pokemon, priorityIds)), "No"));
 
 		actionA_decision_faster_yes2.Children.Add(new Child(actionA_skillSwap, null, null));
 		actionA_decision_faster_no1.Children.Add(new Child(actionA_skillSwap, null, null));
@@ -1732,7 +1758,7 @@
 		if (ids == null || ids.Count == 0) return false;
 		foreach (var moveId in pokemon.PossibleMoves)
 		{
-			if (ids.Contains(moveId)) // ids에 없는 경우, 데미지 계산
+			if (ids.Contains(moveId)) // 기술이 포함되면 확인
 			{
 				// 내던지기 그래스필드 광합성 쾌청 광합성
 				// 147 = 올리르바 광합성 회복량 1/3(84) + 그래스필드 회복량(21) 초과의 피해
@@ -1805,16 +1831,16 @@
 				{
 					// 딕셔너리에서 데미지 확인
 					if (!pokemon.MoveDamages.TryGetValue(moveId, out int damage) || damage < arbolivaHealPerTurn)
-						return false; // 147 이상의 피해를 주지 않는 경우
-					if(CheckMoves(pokemon, allDangerMoveIds))
+						return false; // 데미지 안쎄면
+					if(!CheckMoves(pokemon, allDangerMoveIds))
 					{
-						return false; // 위험한 기술이면
+						return false; // 위험한 기술아니면
 					}
 				}
 			}
 		}
 
-		return true; // 모든 기술이 조건을 만족하면 true 반환
+		return true; // 모든 기술이 변화기거나 위험기술이면
 	}
 
 
